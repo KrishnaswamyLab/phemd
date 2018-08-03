@@ -1,0 +1,212 @@
+---
+title: "PhEMD vignette"
+author: "William Chen"
+date: "July 26, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+PhEMD is a package for comparing multiple heterogeneous single-cell samples to one another. It currently does so by first defining cell subtypes and relating them to one another using Monocle 2. It then computes Earth Mover's Distance (EMD) between each pair of samples, incorporating information about intrinsic cell subtype dissimilarity (i.e. manifold distance between cell subtypes) and differences between samples with respect to relative abundance of each cell subtype. PhEMD uses these pairwise distances to construct a network of single-cell samples that may be visually related in 2D or 3D using a diffusion map and partitioned to identify groups of similar samples.
+
+## 1. Installation
+
+PhEMD requires R version >= 3.4 (recommended 3.5+), Bioconductor version >= 3.5 (recommended 3.7+), and Monocle 2 version >= 2.4.0 (recommended 2.8.0)
+ 
+###Install from Github
+ 
+```{r echo=T, results = 'hide',message=F, warning=F}
+# library(devtools)
+# install_github("wschen/phemd")
+```
+
+###Install from Bioconductor
+
+```{r echo=T, results = 'hide',message=F, warning=F}
+source("http://bioconductor.org/biocLite.R")
+biocLite()
+#biocLite("monocle")
+#biocLite("phemd")
+```
+
+###Load library after installation
+
+```{r echo=T, results = 'hide', message=F, warning=F}
+library('phemd')
+library('monocle')
+```
+
+```{r echo=F, results = 'hide', message=F, warning=F}
+library('EBImage')
+```
+
+## 2. Preparing data for cell state definition and embedding
+
+PhEMD expects single-cell data to be represented as an R list of samples. Each sample (i.e. list element) is expected to be a matrix of dimension *num_cells* x *num_markers*, where markers may represent genes or cytometry protein markers. For this vignette, we will be demonstrating our analysis pipeline on a melanoma dataset consisting of tumor-infiltrating immune cell scRNA-seq data (selected genes) that were log-transformed following TPM-normalization (first published by Tirosh et al., 2016).
+
+We first start by creating a PhEMD data object, specifying the multi-sample expression data (R list), marker names (i.e. column names of the data matrices in the list of expression data), and sample names (in the order they appear in the list of expression data).
+
+```{r echo=T, results = 'hide', message=F, warning=F}
+load('melanomaData.RData')
+myobj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+```
+
+We can optionally remove samples in the PhEMD data object that have fewer than min_sz number of cells as follows:
+
+```{r echo=T}
+myobj <- remove_tiny_samples(myobj, min_sz = 20)
+```
+
+Note that samples that don't meet the meet the minimum cell yield criteria are removed from myobj\@data and from the list of sample names in myobj\@snames.
+
+Next, aggregate data from all samples into a matrix that is stored in the PhEMD data object (in slot 'data_aggregate'). This aggregated data will then be used for initial cell subtype definition and embedding. If there are more cells collectively in all samples than max_cells, an equal number of cells from each sample will be subsampled and stored in myobj\@data_aggregate.
+
+```{r echo=T, results = 'hide'}
+myobj <- aggregate_samples(myobj, max_cells=12000)
+```
+
+
+## 3. Generate Monocle 2 cell embedding with cell state definitions
+
+Now that we have aggregated single-cell data from all samples, we are ready to perform cell subtype definition and dimensionality reduction to visually and spatially relate cells and cell subtypes. For this, we use Monocle 2. Before we begin, we first perform feature selection by selecting 44 important genes. Suggestions on how to choose important genes can be found here: http://cole-trapnell-lab.github.io/monocle-release/docs/#trajectory-step-1-choose-genes-that-define-a-cell-s-progress
+
+```{r echo=T, results = 'hide'}
+myobj <- select_features(myobj, selected_genes)
+```
+
+We are now ready to generate a Monocle 2 embedding. Our *embed_cells()* function is a wrapper function for the *reduceDimension()* function in Monocle 2. For our example dataset, we specify the expression distribution model as *'gaussianff'* as is recommended in the Monocle 2 tutorial for log-transformed scRNA-seq TPM values (http://cole-trapnell-lab.github.io/monocle-release/docs/#choosing-a-distribution-for-your-data-required). *'negbinomial_sz'* is the recommended data type for most unnormalized scRNA-seq data (raw read counts) and *'gaussianff'* is recommended for log-transformed data or arcsin-transformed mass cytometry data. See above link for more details.
+
+Additional parameters may be passed to Monocle 2 *reduceDimension()* as optional named parameters in *embed_cells()*. We found that Monocle 2 is robust to a range of parameters. Sigma can be thought of as a "noise" parameter and we empirically found that sigma in the range of [0.01, 0.1] often works well for log-transformed scRNA-seq data or normalized CyTOF data. Greater values of sigma generally result in fewer total number of clusters. See Monocle 2 publication (Qiu et al., 2017) for additional details on parameter selection.
+
+```{r echo=T, results = 'hide', message=F, warning=F}
+myobj <- embed_cells(myobj, data_model = 'gaussianff', pseudo_expr = 0, sigma = 0.02) # generate 2D cell embedding and cell subtype assignments
+myobj <- order_cells(myobj) # generate pseudotime ordering of cells
+```
+
+The result of the code above is a Monocle 2 object stored in *myobj\@monocle_obj*. This object contains cell subtype and pseudotime assignments for each cell in the aggregated data matrix (stored in *myobj\@data_aggregate*). A 2D embedding of these cells has also been generated. We can visualize the embedding by writing them to file in this way:
+
+```{r echo=T, results = 'hide'}
+savedest <- './example_output/'
+dir.create(savedest, showWarnings = FALSE) # create folder for output
+cmap <- plot_embeddings(myobj, savedest, w=6,h=4)
+```
+
+```{r echo=F, fig.width=6, fig.height=4}
+img = readImage("./example_output/traj_state.png")
+display(img, method = "raster")
+```
+
+To visualize the expression profiles of the cell subtypes, we can plot a heatmap and save to file as such:
+
+```{r echo=T, results = 'hide'}
+plot_heatmaps(myobj, savedest, heatmap_genes) # if heatmap_genes is not specified, all genes (i.e. all columns of myobj@data_aggregate) will be used
+```
+
+```{r echo=F}
+img = readImage("./example_output/heatmap.png")
+display(img, method = "raster")
+```
+
+## 4. Deconvolute single-cell samples and compare using Earth Mover's Distance
+
+Now that we have identified a comprehensive set of cell subtypes across all single-cell samples and related them in a low-dimensional embedding by aggregating cells from all samples, we want to perform deconvolution to determine the abundance of each cell subtype on a per sample basis. To do so, we call this function:
+
+```{r echo=T, results = 'hide'}
+# Determine cell subtype breakdown of each sample
+myobj <- cluster_individual_samples(myobj)
+```
+
+The results of this process are stored in *myobj\@data_cluster_weights*. Row *i* column *j* represents the fraction of all cells in sample *i* assigned to cell subtype *j*.
+
+To compare single-cell samples, we use Earth Mover's Distance, which is a metric that takes into account both the difference in relative frequencies of matching cell subtypes (e.g. % of all cells in each sample that are CD8+ T-cells) and the dissimilarity of the cell subtypes themselves (e.g. intrinsic dissimilarity between CD8+ and CD4+ T-cells). To compute the intrinsic dissimilarity between cell subtypes, we call the following function:
+
+```{r echo=T, results = 'hide'}
+# Determine (dis)similarity of different cell subtypes
+myobj <- generate_gdm(myobj)
+```
+
+*generate_gdm()* stores the pairwise dissimilarity (i.e. "ground-distance" or "tree-distance") between cell subtypes in *myobj\@emd_dist_mat*.
+
+We are now ready to compare single-cell samples using EMD. To do so, we simply call the function *compare_samples()*:
+
+```{r echo=T, results = 'hide'}
+# Perform inter-sample comparisons using EMD
+my_distmat <- compare_samples(myobj)
+```
+
+*compare_samples()* returns a distance matrix representing the pairwise EMD between single-cell samples; *my_distmat[i,j]* represents the dissimilarity between samples *i* and *j* (i.e. samples represented by rows *i* and *j* in myobj\@data_cluster_weights). We can use this distance matrix to identify similar groups of samples as such:
+
+```{r echo=T, results = 'hide'}
+## Identify similar groups of inhibitors (hierarchical clustering for now)
+group_assignments <- group_samples(my_distmat, distfun = 'hclust', ncluster=5)
+# Write inhibitor groups to file
+print_cluster_assignments(group_assignments, myobj, savedest)
+```
+
+
+## 5. Visualize single-cell samples based on PhEMD-based similarity
+
+We can also use the PhEMD-based distance matrix to generate an embedding of single-cell samples, colored by group assignments.
+
+```{r echo=T, results = 'hide'}
+dmap_obj <- plot_grouped_samples_dmap(my_distmat, group_assignments, savedest, pt_sz = 1, pt_label=myobj@snames, w=8,h=5)
+```
+
+```{r echo=F, results = 'hide'}
+plot_grouped_samples_dmap(my_distmat, group_assignments, savedest, pt_sz = 1, pt_label=myobj@snames, w=8,h=5)
+plot_grouped_samples_dmap(my_distmat, group_assignments, savedest, pt_sz = 1, pt_label=myobj@snames, w=8,h=5)
+```
+
+```{r echo=F, fig.width=8, fig.height=4.5}
+img = readImage("./example_output/dm_inhib_embedding.png")
+display(img, method = "raster")
+```
+
+To plot the cell subtype distribution on a per-sample basis, use the following plotting function:
+
+```{r echo=T, results = 'hide'}
+# Plot cell subtype distribution (histogram) for each sample
+plot_sample_histograms(myobj, group_assignments, savedest, cmap)
+```
+
+```{r echo=F, fig.width=8, fig.height=4.5}
+img = readImage("./sample_hist.png")
+display(img, method = "raster")
+```
+
+Note that the *plot_sample_histograms()* function saves each histogram as a separate file in the *savedest* output folder (and 6 selected samples have been subsequently compiled and rendered as a single figure above).
+
+To plot cell subtype histograms summarizing groups of similar samples (bin-wise mean of each cell subtype across all samples assigned to a particular group), use the following plotting function:
+
+```{r echo=T, results = 'hide'}
+# Plot representative cell subtype distribution (histogram) for each group of samples
+plot_summary_histograms(myobj, group_assignments, savedest, cmap)
+```
+
+```{r echo=F, fig.width=10, fig.height=2.5}
+img = readImage("./summary_hist.png")
+display(img, method = "raster")
+```
+
+Note that the *plot_summary_histograms()* function saves each histogram as a separate file in the *savedest* output folder (and have subsequently been compiled and rendered as a single figure above).
+
+To plot cell yield of each samples as a barplot, use the following function:
+
+```{r echo=T, results='hide'}
+# Plot cell yield of each experimental condition
+plot_cell_yield(myobj, savedest, group_assignments, font_sz = 0.7, w=8, h=5)
+```
+
+```{r echo=F, fig.width=8, fig.height=4}
+img = readImage("./example_output/cell_yield_ordered.png")
+display(img, method = "raster")
+```
+
+
+```{r echo=T}
+sessionInfo()
+```

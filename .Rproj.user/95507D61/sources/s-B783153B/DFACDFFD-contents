@@ -1,0 +1,133 @@
+setwd('/Users/Will/Desktop/med_school_homebase/feng_lab/wgs_data/wes_manifests')
+
+####################################
+## PROCESS TARGETS MANIFEST
+####################################
+manifest_tab <- read.delim(file='nimblegen_targets_short.txt', sep='\t', header=T)
+head(manifest_tab)
+
+# Confirm that these columns are all 0s
+sum(manifest_tab$Upstream.Probe.Length != 0)
+sum(manifest_tab$Downstream.Probe.Length != 0)
+
+#Convert to format compatible with web browser UCSC liftover tool
+liftover_input_tab <- paste(manifest_tab$Chromosome, manifest_tab$Start, sep=':')
+liftover_input_tab <- paste(liftover_input_tab, manifest_tab$End, sep='-')
+head(liftover_input_tab)
+write.table(liftover_input_tab, file='liftover_input_targets.txt',quote=F, col.names=F, row.names=F)
+
+### RUN LIFTOVER WEBTOOL ###
+# https://genome.ucsc.edu/cgi-bin/hgLiftOver
+
+# Load output of liftover (converted bed file to txt)
+lift_output <- read.delim(file='liftover_output_targets.txt', sep='\t', header=F, as.is=T)
+lift_output <- t(lift_output)
+
+# Parse chromosomal position strings
+chr_vec <- rep('', length(lift_output))
+start_vec <- rep(-1, length(lift_output))
+end_vec <- rep(-1, length(lift_output))
+for(i in 1:length(lift_output)) {
+  cur_str <- strsplit(lift_output[i], split=':')[[1]]
+  chr_vec[i] <- cur_str[1]
+  cur_pos <- strsplit(cur_str[2], split='-')[[1]]
+  start_vec[i] <- as.numeric(cur_pos[1])
+  end_vec[i] <- as.numeric(cur_pos[2])
+}
+
+stopifnot(sum(start_vec == -1) == 0)
+stopifnot(sum(end_vec == -1) == 0)
+
+name_col <- paste(chr_vec, start_vec, end_vec, sep='-')
+probe_len <- rep(0, length(lift_output))
+
+final_tab <- cbind.data.frame(Name=1:nrow(final_tab), Chromosome=chr_vec, Start=start_vec, End=end_vec,
+'Upstream Probe Length'=probe_len, 'Downstream Probe Length'=probe_len, stringsAsFactors=F)
+
+final_tab$Name <- 1:nrow(final_tab) #Long names are messing up Illumina from recognizing manifest files so just name as index (though this still doesn't seem to fix the problem for targets file...)
+final_tab$Chromosome <- as.character(final_tab$Chromosome)
+final_tab$Start <- as.numeric(final_tab$Start)
+final_tab$End <- as.numeric(final_tab$End)
+
+head(final_tab)
+
+write.table(final_tab, file='nimblegen-seqcap-exome-v3-hg38-targets-manifest.txt', sep='\t', quote=F, row.names=F, col.names=T)
+
+####################################
+## PROCESS PROBES MANIFEST
+####################################
+
+probes_manifest <- read.delim(file='nimblegen_probes_short.txt', sep='\t', header=T)
+head(probes_manifest)
+
+# Confirm that these columns are all 0s
+sum(probes_manifest$Upstream.Probe.Length != 0)
+sum(probes_manifest$Downstream.Probe.Length != 0)
+
+#Convert to format compatible with web browser UCSC liftover tool
+liftover_input_tab_probe <- paste(probes_manifest$Chromosome, probes_manifest$Start, sep=':')
+liftover_input_tab_probe <- paste(liftover_input_tab_probe, probes_manifest$End, sep='-')
+head(liftover_input_tab_probe)
+write.table(liftover_input_tab_probe, file='liftover_input_probes.txt',quote=F, col.names=F, row.names=F)
+
+### RUN LIFTOVER WEBTOOL ###
+# https://genome.ucsc.edu/cgi-bin/hgLiftOver
+
+# Load output of liftover (converted bed file to txt)
+lift_output_probe <- read.table(file='liftover_output_probes.bed', sep='\t', header=F, as.is=T)
+lift_output_probe <- t(lift_output_probe)
+
+# Parse chromosomal position strings
+chr_vec <- rep('', length(lift_output_probe))
+start_vec <- rep(-1, length(lift_output_probe))
+end_vec <- rep(-1, length(lift_output_probe))
+for(i in 1:length(lift_output_probe)) {
+  cur_str <- strsplit(lift_output_probe[i], split=':')[[1]]
+  chr_vec[i] <- cur_str[1]
+  cur_pos <- strsplit(cur_str[2], split='-')[[1]]
+  start_vec[i] <- as.numeric(cur_pos[1])
+  end_vec[i] <- as.numeric(cur_pos[2])
+}
+
+stopifnot(sum(start_vec == -1) == 0)
+stopifnot(sum(end_vec == -1) == 0)
+
+start_vec <- start_vec
+
+name_col <- paste(chr_vec, start_vec, end_vec, sep='-')
+probe_len <- rep(0, length(lift_output_probe))
+
+final_tab_probe <- cbind.data.frame(Name=name_col, Chromosome=chr_vec, Start=start_vec, End=end_vec,
+                              'Upstream Probe Length'=probe_len, 'Downstream Probe Length'=probe_len, stringsAsFactors=F)
+
+head(final_tab_probe)
+
+final_tab_probe$Name <- sapply(final_tab_probe$Name, function(x) substr(x, 4, nchar(x)))
+final_tab_probe$Name <- 1:nrow(final_tab_probe) #Long names are messing up the file format somehow (even after removing chr prefix) so just number 1:nrow for now
+
+write.table(final_tab_probe, file='nimblegen-seqcap-exome-v3-hg38-probes-manifest2.txt', sep='\t', quote=F, row.names=F, col.names=T)
+
+
+
+
+
+# Check diff between paul and my versions of hg38 liftover
+mytab2 <- read.delim(file='exome_manifest_example/ucsf-exome-hg38-probes-manifest copy.txt', sep='\t', header=T, as.is=T)
+
+mymap <- match(final_tab_probe$Name, mytab2$Name)
+final_tab_probe[which(is.na(mymap)),]
+
+final_tab_probe <- final_tab_probe[-which(is.na(mymap)),]
+
+write.table(final_tab_probe[1:3500,], file='nimblegen-seqcap-exome-v3-hg38-probes-manifest6.txt', sep='\t', quote=F, row.names=F, col.names=T)
+
+final_tab_probe[3401:3500,] #Error in write table somewhere here
+
+final_tab_probe2 <- final_tab_probe
+
+final_tab_probe <- final_tab_probe2
+final_tab_probe$Name <- as.character(final_tab_probe$Name)
+final_tab_probe$Name[1:3500] <- 1:3500
+
+write.delim(final_tab_probe[1:3500,],file='nimblegen-seqcap-exome-v3-hg38-probes-manifest9.txt', sep='\t', quote=F, row.names=F, col.names=T)
+
