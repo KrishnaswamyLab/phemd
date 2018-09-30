@@ -9,7 +9,8 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Depends:
-Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2
+Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2, Seurat
 Suggests: knitr
 VignetteBuilder: knitr
+biocViews: Clustering, ComparativeGenomics, Proteomics, Transcriptomics, Sequencing, DimensionReduction, SingleCell, DataRepresentation, Visualization, MultipleComparison
 RoxygenNote: 6.1.0

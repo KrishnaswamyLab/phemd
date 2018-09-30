@@ -26,32 +26,55 @@ get_sample_sizes <- function(data_list) {
 #' @description Takes initial phemdObj struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
 #' @details Private method (not exported in namespace)
 #' @param obj phemdObj struct containing Monocle2 object and underlying expression data
+#' @param cell_model String representing data model for cell state space (Seurat or Monocle 2)
+#' @param expn_type String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)
 #' @return List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
 #' @examples
-#' cluster_expression_data <- retrieve_reference_clusters(my_phemdObj)
+#' cluster_expression_data <- retrieve_refclusters(my_phemdObj)
 
-retrieve_refclusters <- function(obj) {
-  # Extract state labels from monocle data object
-  monocle_obj <- obj@monocle_obj
-  labels <- pData(phenoData(monocle_obj))
-  state_labels <- as.numeric(labels$State)
-
-  mydata <- obj@data_aggregate
+retrieve_refclusters <- function(obj, cell_model='monocle2', expn_type='aligned', ndim=10) {
   ref_clusters = list();
-  for(i in 1:max(state_labels)) {
-    ref_clusters[[i]] <- t(mydata[,state_labels == i])
+  if(cell_model == 'monocle2') {
+    # Extract state labels from monocle data object
+    monocle_obj <- obj@monocle_obj
+    labels <- pData(phenoData(monocle_obj))
+    state_labels <- as.numeric(labels$State)
+
+    mydata <- t(obj@data_aggregate)
+    for(i in 1:max(state_labels)) {
+      ref_clusters[[i]] <- mydata[state_labels == i,]
+    }
+  } else if(cell_model == 'seurat') {
+    seurat_obj <- obj@seurat_obj
+    state_labels <- as.numeric(as.character(seurat_obj@ident))
+    if(min(state_labels) == 0) state_labels <- state_labels + 1 #ensure cluster labels are 1 indexed instead of zero indexed
+    names(state_labels) <- names(seurat_obj@ident) # label cluster assignments with cell name
+    if(expn_type == 'aligned') {
+      # aligned CCA expression data (ncells x nmarkers)
+      mydata <- GetDimReduction(object = seurat_obj, reduction.type = 'cca.aligned',
+                                           slot = "cell.embeddings")[,1:ndim]
+    } else if(expn_type == 'raw') {
+      mydata <- t(as.matrix(seurat_obj@raw.data))
+    } else {
+      stop('Error: expn_type must be either "raw" or "aligned"')
+    }
+    for(i in 1:max(state_labels)) {
+      ref_clusters[[i]] <- mydata[state_labels == i,]
+    }
+  } else {
+      stop('Error: cell_model must be either "monocle2" or "seurat"')
   }
   return(ref_clusters)
 }
 
 
-#' @title Identify cluster centroids
+#' @title Identify cluster centroids (cell names)
 #' @description Takes initial list and returns list of cell names representing centroid of cluster
 #' @details Private method (not exported in namespace)
-#' @param obj phemdObj containing Monocle2 object and underlying expression data
+#' @param ref_clusters list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)
 #' @return List of names; element \var{i} represents the name of the cell in cluster \var{i} that is closest to the centroid (arithmetic mean) of cluster \var{i}
 #' @examples
-#' my_centroids <- identify_centroids(my_phemdObj)
+#' centroid_names <- identify_centroids(ref_clusters, data_ordered)
 
 identify_centroids <- function(ref_clusters, data_ordered) {
   centroids = list()
@@ -64,6 +87,25 @@ identify_centroids <- function(ref_clusters, data_ordered) {
     #closest_vertex <- get_closest_vertex(closest_cell, data_ordered) #closest cell in mst
     #centroids[[i]] <- closest_vertex
     centroids[[i]] <- closest_cell
+  }
+  return(centroids)
+}
+
+
+#' @title Get arithmetic centroids (coordinates)
+#' @description Takes initial list and returns a matrix with row \var{i} representing the arithmetic centroid of cluster \var{i}
+#' @details Private method (not exported in namespace)
+#' @param ref_clusters list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)
+#' @return Matrix of dimension num_cluster x num_markers; row \var{i} representing the arithmetic centroid of cluster \var{i}
+#' @examples
+#' cluster_centroids <- get_arithmetic_centroids(ref_clusters)
+
+get_arithmetic_centroids <- function(ref_clusters) {
+  if(length(ref_clusters) < 1) stop('Error: input requires at least 1 reference cluster')
+  centroids = matrix(0, nrow=length(ref_clusters), ncol = ncol(ref_clusters[[1]]))
+  for(i in 1:length(ref_clusters)) {
+    cur_cluster = ref_clusters[[i]]
+    centroids[i,] = colMeans(cur_cluster)
   }
   return(centroids)
 }
@@ -98,24 +140,19 @@ assign_cell_cluster <- function(cur_cells, ref_clusters) {
 #' @return Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}
 #' @examples
 #' cur_cells_cluster_labels <- assign_cell_cluster_nearest_node(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels)
-assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labels) {
+assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labels, data_model='monocle') {
   if(nrow(ref_cells) != length(ref_cell_labels)) stop("Error: number of cells and cell labels do not match")
-
-
-  #n_refcells = nrow(ref_cells);
-  #distances = matrix(0, nrow=nrow(cur_cells), ncol=n_refcells);
-
-  #diagmat <- diag(ncol(cur_cells))
-  #for(i in 1:n_refcells) {
-  #  #distances[,i] = mahalanobis(cur_cells, cur_refcluster_ctr, cur_refcluster_cov); #alternative if want to use mahalanobis
-  #  distances[,i] = mahalanobis(cur_cells, ref_cells[i,], diagmat); #using standardized euclidean distance
-  #}
-  #nearest_cell <- as.matrix(apply(distances, 1, which.min))
 
   closest <- RANN::nn2(data = ref_cells, query = cur_cells, k = 1) #fast nearest neighbor search
   nearest_cell <- closest$nn.idx
 
-  assigned <- ref_cell_labels[nearest_cell]
+  if(data_model == 'monocle2') {
+    assigned <- ref_cell_labels[nearest_cell]
+  } else {
+    nearest_cell_names <- rownames(ref_cells)[nearest_cell]
+    assigned <- as.numeric(ref_cell_labels[nearest_cell_names])
+  }
+
   return(assigned)
 }
 
@@ -152,6 +189,32 @@ create_dataobj <- function(all_data, markers, snames) {
   data_obj <- new('phemdObj', data = all_data, markers = markers, snames = snames)
   return(data_obj)
 }
+
+#' @title Attach 'seurat' object to 'phemdObj' object
+#' @description Allows user to attach batch-normalized reference cell data from Seurat into 'phemdObj' object containing raw expression data and metadata
+#' @param phemd_obj phemdObj struct initialized using create_dataobj
+#' @param seurat_obj S4 'seurat' object containing batch-normalized reference cell data
+#' @param batch.colname Name of column in Seurat object that denotes batch ID
+#' @return 'phemdObj' object containing with attached Seurat object
+#' @examples
+#' my_phemdObj <- attach_seuratobj(my_phemdObj, my_seuratObj)
+attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
+  stopifnot(class(seurat_obj) == 'seurat')
+  # ensure cluster names are 1-indexed
+  if(min(as.numeric(as.character(seurat_obj@ident))) == 0) {
+    label_names <- names(seurat_obj@ident)
+    labels_renumbered <- factor(as.numeric(as.character(seurat_obj@ident)) +1)
+    names(labels_renumbered) <- label_names
+    seurat_obj@ident <- labels_renumbered
+  }
+  if(batch.colname != 'plt') {
+    seurat_obj@meta.data$plt <- seurat_obj@meta.data[[batch.colname]]
+  }
+  phemd_obj@seurat_obj <- seurat_obj
+
+  return(phemd_obj)
+}
+
 
 #' @title Remove samples with too few cells
 #' @description Removes samples from phemdObj that have fewer cells than \code{min_sz}
@@ -290,16 +353,17 @@ embed_cells <- function(obj, data_model = 'negbinomial_sz', ...) {
     stop("Error: Invalid data_model specified")
   }
 
-  # Helpful to use ncenter that's higher than default in reduceDimension for datasets w/ relatively more cells
+  # Helpful to use ncenter and sigma that's higher than default in reduceDimension for datasets w/ relatively more cells
   if(!('ncenter' %in% names(extra_args)) && ncol(mydata) > 3000) {
     extra_args['ncenter'] <- 750
+    if(!('sigma' %in% names(extra_args))) extra_args['sigma'] <- 0.03
   }
 
   if(!('maxIter' %in% names(extra_args))) {
     extra_args['maxIter'] <- 12 #set maximum number of iterations to 12
   }
 
-  monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData = fd, expressionFamily = expression_fam_fn, suppressWarnings=T)
+  monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData = fd, expressionFamily = expression_fam_fn)
   varLabels(monocle_obj@featureData) <- 'gene_short_name' #random formatting requirement for monocle
 
   monocle_obj <- estimateSizeFactors(monocle_obj)
@@ -310,9 +374,6 @@ embed_cells <- function(obj, data_model = 'negbinomial_sz', ...) {
     extra_args['norm_method'] <- 'none'
     extra_args['scaling'] <- 'FALSE'
   }
-
-  # NEW FOR MONOCLE 3
-  #monocle_obj <- preprocessCDS(monocle_obj, num_dim=6, method='PCA', norm_method='none')
 
   rd_args <- c(list(cds=monocle_obj, max_components=2, reduction_method='DDRTree'),
                extra_args[names(extra_args) %in% c("verbose", "ncenter", "norm_method", 'scaling', 'pseudo_expr', "initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol")])
@@ -352,6 +413,7 @@ order_cells <- function(obj, ...) {
 #' @details \code{embed_cells} and \code{order_cells} need to be called before calling this function. Required additional package: 'RColorBrewer'
 #' @param obj 'phemdObj' object containing Monocle 2 object
 #' @param path Path to destination folder (must already exist)
+#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param cmap User-specified colormap to use to color cell state embedding (optional)
 #' @return Colormap (vector of colors) used to color Monocle2 cell state embedding
 #' @examples
@@ -361,100 +423,132 @@ order_cells <- function(obj, ...) {
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
-plot_embeddings <- function(obj, path, cmap=NULL, w=4, h=5) {
+plot_embeddings <- function(obj, path, cell_model='monocle2', cmap=NULL, w=4, h=5, pt_sz = 1, ndims=NULL) {
   if(substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
-  monocle_obj <- obj@monocle_obj
-  cell_embedding = reducedDimS(monocle_obj)
-  mydata <- obj@data_aggregate
+  if(cell_model == 'monocle2') {
+    monocle_obj <- obj@monocle_obj
+    cell_embedding = reducedDimS(monocle_obj)
+    mydata <- obj@data_aggregate
 
-  # Extract state labels from monocle data object
-  labels <- pData(phenoData(monocle_obj))
-  state_labels <- as.numeric(labels$State)
+    # Extract state labels from monocle data object
+    labels <- pData(phenoData(monocle_obj))
+    state_labels <- as.numeric(labels$State)
 
 
-  levels <- levels(factor(state_labels))
-  levels_renamed <- sapply(levels, function(x) paste("C-", x, sep=""))
+    levels <- levels(factor(state_labels))
+    levels_renamed <- sapply(levels, function(x) paste("C-", x, sep=""))
 
-  if(is.null(cmap)) {
-    getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-    cmap <- getPalette(max(state_labels))
-    if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-    cmap <- sample(cmap)
+    if(is.null(cmap)) {
+      getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+      cmap <- getPalette(max(state_labels))
+      if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+      cmap <- sample(cmap)
+    }
+    palette(cmap)
+
+    cell_embedding_t <- as.data.frame(t(cell_embedding))
+    # visualize traj colored by state
+    myplot <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
+      geom_point(size=0.4) +
+      scale_color_manual(labels = levels_renamed,
+                         values = cmap) +
+      guides(colour = guide_legend(override.aes = list(size=2))) +
+      labs(x="", y = "", color = "Cell subtype") +
+      theme_classic() +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(),
+            axis.title.y=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            axis.line = element_line(colour = "black",
+                                     size = 1, linetype = "solid"))
+
+    ggsave(filename=paste(path, "traj_state.png", sep=""), plot=myplot, width=w, height=h, dpi=300)
+
+    png(filename=paste(path, "traj_state_labeled.png", sep=""),
+        units="in",
+        width=w,
+        height=h,
+        res=300)
+    plot(cell_embedding[1,], cell_embedding[2,], col=state_labels, pch=20, cex=1, xlab="", ylab="", xaxt='n', yaxt='n')
+    ref_cluster_centroids <- matrix(0, nrow=max(state_labels), ncol=nrow(cell_embedding))
+    ref_clusters = list()
+    for(i in 1:max(state_labels)) {
+      ref_clusters[[i]] <- t(monocle_obj[,state_labels == i]@assayData$exprs)
+      ref_cluster_centroids[i,] = rowMeans(cell_embedding[,state_labels == i])
+    }
+    text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
+    dev.off()
+
+    # visualize traj colored by pseudotime
+    ncolor = 9
+    palette(brewer.pal(ncolor, "Blues"))
+    col.labels <- labels$Pseudotime / max(labels$Pseudotime) * (ncolor - 2) + 2 # linear interpolation between [2,ncolor]
+
+    png(filename=paste(path, "traj_pseudotime_labeled.png", sep=""),
+        units="in",
+        width=w,
+        height=h,
+        res=300)
+    plot(cell_embedding[1,], cell_embedding[2,], col=col.labels, pch=20, cex=1, xlab="", ylab="", xaxt='n', yaxt='n')
+    ref_cluster_centroids <- matrix(0, nrow=max(state_labels), ncol=nrow(cell_embedding))
+    ref_clusters = list()
+    for(i in 1:max(state_labels)) {
+      ref_clusters[[i]] <- t(mydata[,state_labels == i])
+      ref_cluster_centroids[i,] = rowMeans(cell_embedding[,state_labels == i])
+    }
+    text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
+    dev.off()
+
+    col.labels <- labels$Pseudotime
+
+    # visualize traj colored by pseudotime
+    myplot <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=col.labels)) +
+      geom_point(size=0.4) +
+      labs(x="", y = "", color = "Pseudotime") +
+      theme_classic() +
+      theme(axis.title.x=element_blank(),
+            axis.text.x=element_blank(),
+            axis.ticks.x=element_blank(),
+            axis.title.y=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            axis.line = element_line(colour = "black",
+                                     size = 1, linetype = "solid"))
+
+    ggsave(filename=paste(path, "traj_pseudotime.png", sep=""), plot=myplot, width=w, height=h, dpi=300)
+    return(cmap)
+  } else if(cell_model == 'seurat') {
+    # TODO: implement this
+    seurat_obj <- obj@seurat_obj
+
+    if(!'tsne' %in% names(seurat.combined@dr)) {
+      print('Running t-SNE...')
+      if(is.null(ndims)) ndims = 10
+      seurat_obj <- RunTSNE(seurat_obj,reduction.use = "cca.aligned", dims.use = 1:ndims)
+    }
+
+    # define color map
+    if(is.null(cmap)) {
+      getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+      cmap <- getPalette(max(as.numeric(seurat.combined@ident)))
+      if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+      cmap <- sample(cmap)
+    }
+
+
+    png(filename=paste(path, "cell_state_tsne.png", sep=""),
+        units="in",
+        width=w,
+        height=h,
+        res=300)
+    TSNEPlot(seurat_obj, do.label = F, pt.size = pt_sz, colors.use = cmap)
+    dev.off()
+
+  } else {
+    stop('Error: cell_model must be either "monocle2" or "seurat"')
   }
-  palette(cmap)
-
-  cell_embedding_t <- as.data.frame(t(cell_embedding))
-  # visualize traj colored by state
-  myplot <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
-    geom_point(size=0.4) +
-    scale_color_manual(labels = levels_renamed,
-                       values = cmap) +
-    guides(colour = guide_legend(override.aes = list(size=2))) +
-    labs(x="", y = "", color = "Cell subtype") +
-    theme_classic() +
-    theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.line = element_line(colour = "black",
-                                   size = 1, linetype = "solid"))
-
-  ggsave(filename=paste(path, "traj_state.png", sep=""), plot=myplot, width=w, height=h, dpi=300)
-
-  png(filename=paste(path, "traj_state_labeled.png", sep=""),
-      units="in",
-      width=w,
-      height=h,
-      res=300)
-  plot(cell_embedding[1,], cell_embedding[2,], col=state_labels, pch=20, cex=1, xlab="", ylab="", xaxt='n', yaxt='n')
-  ref_cluster_centroids <- matrix(0, nrow=max(state_labels), ncol=nrow(cell_embedding))
-  ref_clusters = list()
-  for(i in 1:max(state_labels)) {
-    ref_clusters[[i]] <- t(monocle_obj[,state_labels == i]@assayData$exprs)
-    ref_cluster_centroids[i,] = rowMeans(cell_embedding[,state_labels == i])
-  }
-  text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
-  dev.off()
-
-  # visualize traj colored by pseudotime
-  ncolor = 9
-  palette(brewer.pal(ncolor, "Blues"))
-  col.labels <- labels$Pseudotime / max(labels$Pseudotime) * (ncolor - 2) + 2 # linear interpolation between [2,ncolor]
-
-  png(filename=paste(path, "traj_pseudotime_labeled.png", sep=""),
-      units="in",
-      width=w,
-      height=h,
-      res=300)
-  plot(cell_embedding[1,], cell_embedding[2,], col=col.labels, pch=20, cex=1, xlab="", ylab="", xaxt='n', yaxt='n')
-  ref_cluster_centroids <- matrix(0, nrow=max(state_labels), ncol=nrow(cell_embedding))
-  ref_clusters = list()
-  for(i in 1:max(state_labels)) {
-    ref_clusters[[i]] <- t(mydata[,state_labels == i])
-    ref_cluster_centroids[i,] = rowMeans(cell_embedding[,state_labels == i])
-  }
-  text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
-  dev.off()
-
-  col.labels <- labels$Pseudotime
-
-  # visualize traj colored by pseudotime
-  myplot <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=col.labels)) +
-    geom_point(size=0.4) +
-    labs(x="", y = "", color = "Pseudotime") +
-    theme_classic() +
-    theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank(),
-          axis.ticks.x=element_blank(),
-          axis.title.y=element_blank(),
-          axis.text.y=element_blank(),
-          axis.ticks.y=element_blank(),
-          axis.line = element_line(colour = "black",
-                                   size = 1, linetype = "solid"))
-
-  ggsave(filename=paste(path, "traj_pseudotime.png", sep=""), plot=myplot, width=w, height=h, dpi=300)
   return(cmap)
 }
 
@@ -464,6 +558,7 @@ plot_embeddings <- function(obj, path, cmap=NULL, w=4, h=5) {
 #' @details \code{embed_cells} and \code{order_cells} need to be called before calling this function. Required additional package: 'pheatmap'
 #' @param obj 'phemdObj' object containing Monocle 2 object
 #' @param path Path to destination folder (must already exist)
+#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param selected_genes Vector containing gene names to include in heatmap (optional)
 #' @return None
 #' @examples
@@ -474,60 +569,154 @@ plot_embeddings <- function(obj, path, cmap=NULL, w=4, h=5) {
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 #' plot_heatmaps(my_phemdObj_monocle, savedest)
-plot_heatmaps <- function(obj, path, selected_genes=NULL, upweighted_idx=NULL, upweight_factor=NULL) {
-  # retrieve reference clusters
-  ref_clusters <- retrieve_refclusters(obj)
-  selected_clusters <- 1:length(ref_clusters)
-  myheatmap <- matrix(0, nrow=length(selected_clusters), ncol = ncol(ref_clusters[[1]]))
-  for(i in 1:length(selected_clusters)) {
-    cur_cluster_idx = selected_clusters[i]
-    cur_cluster = ref_clusters[[i]]
-    if(!is.null(cur_cluster)) myheatmap[i,] = colMeans(cur_cluster)
-  }
-
-  selected_clusters_renamed <- sapply(selected_clusters, function(x) paste("C-", x, sep=""))
-
-  rownames(myheatmap) <- selected_clusters_renamed
-  colnames(myheatmap) <- obj@markers
-
-  if(!is.null(selected_genes)) {
-    col_tokeep <- match(selected_genes, obj@markers)
-    if(sum(is.na(col_tokeep)) > 0) {
-      genes_not_found <- ''
-      missing_idx <- which(is.na(col_tokeep))
-      for(i in 1:length(missing_idx)) {
-        if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
-        else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
-      }
-      disp(sprintf("Genes not found: %s", genes_not_found, sep=""))
+plot_heatmaps <- function(obj, path, cell_model='monocle2', selected_genes=NULL, w=8, h=5) {
+  if(substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
+  if(cell_model == 'monocle2') {
+    # retrieve reference clusters
+    ref_clusters <- retrieve_refclusters(obj, cell_model='monocle2')
+    selected_clusters <- 1:length(ref_clusters)
+    myheatmap <- matrix(0, nrow=length(selected_clusters), ncol = ncol(ref_clusters[[1]]))
+    for(i in 1:length(selected_clusters)) {
+      cur_cluster_idx = selected_clusters[i]
+      cur_cluster = ref_clusters[[i]]
+      if(!is.null(cur_cluster)) myheatmap[i,] = colMeans(cur_cluster)
     }
-    col_tokeep <- col_tokeep[!is.na(col_tokeep)]
-    myheatmap <- myheatmap[,col_tokeep]
+
+    selected_clusters_renamed <- sapply(selected_clusters, function(x) paste("C-", x, sep=""))
+
+    rownames(myheatmap) <- selected_clusters_renamed
+    colnames(myheatmap) <- obj@markers
+
+    if(!is.null(selected_genes)) {
+      col_tokeep <- match(selected_genes, obj@markers)
+      if(sum(is.na(col_tokeep)) > 0) {
+        genes_not_found <- ''
+        missing_idx <- which(is.na(col_tokeep))
+        for(i in 1:length(missing_idx)) {
+          if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
+          else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
+        }
+        disp(sprintf("Genes not found: %s", genes_not_found, sep=""))
+      }
+      col_tokeep <- col_tokeep[!is.na(col_tokeep)]
+      myheatmap <- myheatmap[,col_tokeep]
+    }
+
+    myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
+
+    assignInNamespace(
+      x = "draw_colnames",
+      value = "draw_colnames_45",
+      ns = asNamespace("pheatmap")
+    )
+
+    myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
+
+    pheatmap(myheatmap2,
+             cluster_rows=F,
+             cluster_cols=T,
+             border_color=NA,
+             show_colnames=T,
+             show_rownames=T,
+             fontsize_col=8,
+             fontsize_row=12,
+             cellwidth=10,
+             filename=paste(path, "heatmap.png", sep=""),
+             width=w,
+             height=h
+    )
+  } else if(cell_model == 'seurat') {
+    #TODO: implement this
+    seurat_obj <- obj@seurat_obj
+    state_labels <- as.numeric(as.character(seurat_obj@ident))
+    names(state_labels) <- rownames(seurat_obj@meta.data)
+    ref_data <- t(as.matrix(seurat_obj@raw.data))
+
+    batches <- unique(obj@experiment_ids)
+    myheatmaps_all <- list()
+    for(batch_id in batches) {
+      cell_idx_curplt <- which(seurat_obj@meta.data$plt == batch_id)
+      if(length(cell_idx_curplt) == 0) {
+        stop(sprintf('Error: no cells in reference set match the experiment_id %s. Please check phemdObj@experiment_ids.', batch_id))
+      }
+      cur_ref_data <- ref_data[cell_idx_curplt,]
+      cur_state_labels <- state_labels[cell_idx_curplt]
+
+
+      myheatmap <- matrix(0, nrow=max(state_labels), ncol = ncol(cur_ref_data))
+      for(i in 1:max(state_labels)) {
+        cur_idx <- which(cur_state_labels == i)
+        cur_cluster = cur_ref_data[cur_idx,]
+        if(length(cur_idx) > 1) myheatmap[i,] = colMeans(cur_cluster)
+        if(length(cur_idx) == 1) myheatmap[i,] = cur_cluster
+      }
+
+      selected_clusters_renamed <- sapply(1:max(state_labels), function(x) paste("C-", x, sep=""))
+
+      rownames(myheatmap) <- selected_clusters_renamed
+      colnames(myheatmap) <- obj@markers
+
+      if(!is.null(selected_genes)) {
+        col_tokeep <- match(selected_genes, obj@markers)
+        if(sum(is.na(col_tokeep)) > 0) {
+          genes_not_found <- ''
+          missing_idx <- which(is.na(col_tokeep))
+          for(i in 1:length(missing_idx)) {
+            if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
+            else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
+          }
+          disp(sprintf("Genes not found: %s", genes_not_found, sep=""))
+        }
+        col_tokeep <- col_tokeep[!is.na(col_tokeep)]
+        myheatmap <- myheatmap[,col_tokeep]
+      }
+
+      myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
+
+      assignInNamespace(
+        x = "draw_colnames",
+        value = "draw_colnames_45",
+        ns = asNamespace("pheatmap")
+      )
+
+      myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
+      myheatmaps_all[[batch_id]] <- myheatmap2
+      pheatmap(myheatmap2,
+               cluster_rows=F,
+               cluster_cols=F,
+               border_color=NA,
+               show_colnames=T,
+               show_rownames=T,
+               fontsize_col=8,
+               fontsize_row=12,
+               cellwidth=10,
+               filename=paste(path, sprintf("heatmap_%s.png", batch_id), sep=""),
+               width=w,
+               height=h
+      )
+    }
+
+    myheatmaps_avg <- myheatmaps_all[[1]]
+    for(i in 2:length(myheatmaps_all)) {
+      myheatmaps_avg <- myheatmaps_avg + myheatmaps_all[[i]]
+    }
+    myheatmaps_avg <- myheatmaps_avg / length(myheatmaps_all)
+    pheatmap(myheatmaps_avg,
+             cluster_rows=T,
+             cluster_cols=F,
+             border_color=NA,
+             show_colnames=T,
+             show_rownames=T,
+             fontsize_col=8,
+             fontsize_row=12,
+             cellwidth=10,
+             filename=paste(path, "heatmap_avg.png", sep=""),
+             width=w,
+             height=h)
+
+  } else {
+    stop('Error: cell_model must either be "monocle2" or "seurat"')
   }
-
-  myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
-
-  assignInNamespace(
-    x = "draw_colnames",
-    value = "draw_colnames_45",
-    ns = asNamespace("pheatmap")
-  )
-
-  myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
-
-  pheatmap(myheatmap2,
-           cluster_rows=F,
-           cluster_cols=T,
-           border_color=NA,
-           show_colnames=T,
-           show_rownames=T,
-           fontsize_col=8,
-           fontsize_row=12,
-           cellwidth=10,
-           filename=paste(path, "heatmap.png", sep=""),
-           width=8,
-           height=6
-           )
 }
 
 
@@ -563,62 +752,108 @@ draw_colnames_45 <- function(coln, gaps, ...) {
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #'
-cluster_individual_samples <- function(obj, verbose=F) {
+cluster_individual_samples <- function(obj, verbose=F, cell_model='monocle2') {
   stopifnot(class(obj) == 'phemdObj')
   all_data <- obj@data
-  monocle_obj <- obj@monocle_obj
-  if(ncol(monocle_obj) == 0) stop('slot "monocle_obj" is empty; please call embed_cells() and order_cells() before calling this function')
+  if(cell_model == 'monocle2') {
+    monocle_obj <- obj@monocle_obj
+    if(ncol(monocle_obj) == 0) stop('slot "monocle_obj" is empty; please call embed_cells() and order_cells() before calling this function')
 
-  # Extract state labels from monocle data object
-  labels <- pData(phenoData(monocle_obj))
-  if(!('State' %in% names(labels))) stop('obj@monocle_obj does not have cell state assignments; please call embed_cells() and order_cells() before calling this function')
-  state_labels <- as.numeric(labels$State)
-  # retrieve reference clusters
-  ref_clusters <- retrieve_refclusters(obj)
-  nclusters = length(ref_clusters)
+    # Extract state labels from monocle data object
+    labels <- pData(phenoData(monocle_obj))
+    if(!('State' %in% names(labels))) stop('obj@monocle_obj does not have cell state assignments; please call embed_cells() and order_cells() before calling this function')
+    state_labels <- as.numeric(labels$State)
+    # retrieve reference clusters
+    ref_clusters <- retrieve_refclusters(obj, cell_model='monocle2')
+    nclusters = length(ref_clusters)
 
-  if(!obj@subsampled_bool) {
-    ## subsampling not performed; all cells assigned to clusters as-is
+    if(!obj@subsampled_bool) {
+      ## subsampling not performed; all cells assigned to clusters as-is
 
-    cluster_weights <- matrix(0, nrow=length(all_data), ncol = nclusters)
+      cluster_weights <- matrix(0, nrow=length(all_data), ncol = nclusters)
 
-    start_idx <- 1
-    for(i in 1:length(all_data)) {
-      cur_sample_sz <- nrow(all_data[[i]])
-      end_idx <- start_idx + cur_sample_sz - 1
-      sample_labels <- state_labels[start_idx:end_idx] #cell subtype assignments for current sample
-      cur_hist = rep(0, nclusters)
-      for(j in 1:nclusters) {
-        cur_hist[j] = sum(sample_labels == j);
+      start_idx <- 1
+      for(i in 1:length(all_data)) {
+        cur_sample_sz <- nrow(all_data[[i]])
+        end_idx <- start_idx + cur_sample_sz - 1
+        sample_labels <- state_labels[start_idx:end_idx] #cell subtype assignments for current sample
+        cur_hist = rep(0, nclusters)
+        for(j in 1:nclusters) {
+          cur_hist[j] = sum(sample_labels == j);
+        }
+        cur_hist = cur_hist / sum(cur_hist);
+        cluster_weights[i,] = cur_hist;
+        start_idx <- end_idx + 1
       }
-      cur_hist = cur_hist / sum(cur_hist);
-      cluster_weights[i,] = cur_hist;
-      start_idx <- end_idx + 1
+      obj@data_cluster_weights <- cluster_weights
+    } else {
+      ## subsampling performed; need to assign cells to cluster of nearest cell in embedding
+      refcluster_sizes <- rep(0, length(ref_clusters))
+      counter1 = 0
+      for(i in 1:nclusters) {
+        refcluster_sizes[i] = nrow(ref_clusters[[i]])
+        counter1 = counter1 + nrow(ref_clusters[[i]])
+      }
+      print(refcluster_sizes / counter1)
+
+      cluster_weights <- matrix(0, nrow=length(all_data), ncol = nclusters)
+      for(i in 1:length(all_data)) {
+        cur_data = all_data[[i]]
+        cur_ncells = nrow(cur_data)
+        cur_hist = rep(0, nclusters)
+
+        if(verbose && i %% 10 == 0) {
+          print(sprintf('Processing sample number: %d', i))
+        }
+        # Consider using euclidean / mahalanobis distance to centroids of reference clusters
+        #cur_cell_labels = assign_cell_cluster(cur_data, ref_clusters);
+
+        cur_cell_labels = assign_cell_cluster_nearest_node(cur_data, t(exprs(monocle_obj)), state_labels); # Use nearest-cell mapping instead of nearest-centroid mapping
+
+        for(j in 1:nclusters) {
+          cur_hist[j] = sum(cur_cell_labels == j);
+        }
+        cur_hist = cur_hist / sum(cur_hist);
+        cluster_weights[i,] = cur_hist;
+      }
+      print(colMeans(cluster_weights))
+
+      obj@data_cluster_weights <- cluster_weights
     }
-    obj@data_cluster_weights <- cluster_weights
-  } else {
+  } else if(cell_model == 'seurat') {
+    seurat_obj <- obj@seurat_obj
+    # retrieve reference clusters for starting estimate of cluster sizes
+    ref_clusters <- retrieve_refclusters(obj, cell_model='seurat', expn_type = 'raw')
+    nclusters <- length(ref_clusters)
     ## subsampling performed; need to assign cells to cluster of nearest cell in embedding
     refcluster_sizes <- rep(0, length(ref_clusters))
     counter1 = 0
     for(i in 1:nclusters) {
-      refcluster_sizes[i] = (nrow(ref_clusters[[i]]))
+      refcluster_sizes[i] = nrow(ref_clusters[[i]])
       counter1 = counter1 + nrow(ref_clusters[[i]])
     }
     print(refcluster_sizes / counter1)
 
     cluster_weights <- matrix(0, nrow=length(all_data), ncol = nclusters)
     for(i in 1:length(all_data)) {
-      cur_data = all_data[[i]]
-      cur_ncells = nrow(cur_data)
-      cur_hist = rep(0, nclusters)
-
+      cur_data <- all_data[[i]]
+      cur_plt <- obj@experiment_ids[i]
       if(verbose && i %% 10 == 0) {
         print(sprintf('Processing sample number: %d', i))
       }
-      # TODO: consider switching euclidean to mahalanobis distance
-      #cur_cell_labels = assign_cell_cluster(cur_data, ref_clusters);
 
-      cur_cell_labels = assign_cell_cluster_nearest_node(cur_data, t(exprs(monocle_obj)), state_labels); # Use nearest-cell mapping instead of nearest-centroid mapping
+      cur_hist <- rep(0, nclusters)
+      state_labels <- as.numeric(as.character(seurat_obj@ident))
+      names(state_labels) <- rownames(seurat_obj@meta.data)
+      ref_data <- t(as.matrix(seurat_obj@raw.data))
+      cell_idx_curplt <- which(seurat_obj@meta.data$plt == cur_plt)
+      if(length(cell_idx_curplt) == 0) {
+        stop(sprintf('Error: no cells in reference set match the experiment_id %s of sample %d', cur_plt, i))
+      }
+      ref_data <- ref_data[cell_idx_curplt,]
+      state_labels <- state_labels[cell_idx_curplt]
+
+      cur_cell_labels = assign_cell_cluster_nearest_node(cur_data, ref_data, state_labels); # Use nearest-cell mapping instead of nearest-centroid mapping
 
       for(j in 1:nclusters) {
         cur_hist[j] = sum(cur_cell_labels == j);
@@ -629,7 +864,10 @@ cluster_individual_samples <- function(obj, verbose=F) {
     print(colMeans(cluster_weights))
 
     obj@data_cluster_weights <- cluster_weights
+  } else {
+    stop('Error: cell_model must either be "monocle2" or "seurat"')
   }
+
   return(obj)
 }
 
@@ -638,6 +876,7 @@ cluster_individual_samples <- function(obj, verbose=F) {
 #' @description Takes as input an phemdObj with Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns same phemdObj with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
 #' @details \code{embed_cells} and \code{order_cells} need to be called before calling this function. Requires 'igraph' package
 #' @param obj 'phemdObj' object containing Monocle2 object (already embedded and ordered) in @@monocle_obj slot
+#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @return phemdObj with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
@@ -648,29 +887,38 @@ cluster_individual_samples <- function(obj, verbose=F) {
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 #'
-generate_gdm <- function(obj) {
+generate_gdm <- function(obj, cell_model='monocle2') {
   stopifnot(class(obj) == 'phemdObj')
-  monocle_obj <- obj@monocle_obj
-  # retrieve reference clusters
-  ref_clusters <- retrieve_refclusters(obj)
-  nclusters = length(ref_clusters)
 
+  if(cell_model == 'monocle2') {
+    monocle_obj <- obj@monocle_obj
+    # retrieve reference clusters
+    ref_clusters <- retrieve_refclusters(obj, cell_model='monocle2')
+    nclusters = length(ref_clusters)
 
-  #mst_graph <- minSpanningTree(data_ordered) # this gives mst with ncenter nodes
-  mst_graph <- monocle_obj@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree # get graph underlying Monocle tree
-  centroids <- identify_centroids(ref_clusters, monocle_obj)
-  pseudotimes <- pData(phenoData(monocle_obj))$Pseudotime
-  emd_dists <- matrix(0, nrow=nclusters, ncol=nclusters)
-  for(i in 1:nclusters) {
-    for(j in 1:nclusters) {
-      if(i == j) next
-      path_btwn_cells <- shortest_paths(mst_graph, centroids[[i]], centroids[[j]])$vpath[[1]] #cell1 and cell2 should be strings representing vertices in mst
-      pseudotime_curpath <- pseudotimes[path_btwn_cells]
-      pseudotime_dist <- abs(pseudotimes[as.numeric(centroids[[i]])] - min(pseudotime_curpath)) + abs(pseudotimes[as.numeric(centroids[[j]])] - min(pseudotime_curpath))
-      emd_dists[i,j] <- pseudotime_dist
+    mst_graph <- monocle_obj@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree # get graph underlying Monocle tree
+    centroids <- identify_centroids(ref_clusters, monocle_obj)
+    pseudotimes <- pData(phenoData(monocle_obj))$Pseudotime
+    emd_dists <- matrix(0, nrow=nclusters, ncol=nclusters)
+    for(i in 1:nclusters) {
+      for(j in 1:nclusters) {
+        if(i == j) next
+        path_btwn_cells <- shortest_paths(mst_graph, centroids[[i]], centroids[[j]])$vpath[[1]] #cell1 and cell2 should be strings representing vertices in mst
+        pseudotime_curpath <- pseudotimes[path_btwn_cells]
+        pseudotime_dist <- abs(pseudotimes[as.numeric(centroids[[i]])] - min(pseudotime_curpath)) + abs(pseudotimes[as.numeric(centroids[[j]])] - min(pseudotime_curpath))
+        emd_dists[i,j] <- pseudotime_dist
+      }
     }
+    obj@emd_dist_mat <- emd_dists
+  } else if(cell_model == 'seurat') {
+    # TODO: implement seurat option for computing gdm
+    ref_clusters <- retrieve_refclusters(obj, cell_model='seurat', expn_type='aligned', ndim=8)
+    seurat_obj <- obj@seurat_obj
+    centroids <- get_arithmetic_centroids(ref_clusters)
+    obj@emd_dist_mat <- as.matrix(dist(centroids))
+  } else {
+    stop('Error: cell_model must be either "monocle2" or "seurat"')
   }
-  obj@emd_dist_mat <- emd_dists
   return(obj)
 }
 
@@ -730,13 +978,13 @@ compare_samples <- function(obj) {
 #' my_EMD_mat <- compare_samples(my_phemdObj_final)
 #' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 #'
-group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL) {
+group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='complete') {
   ## Identify similar groups of inhibitors (hierarchical clustering for now)
   if(nrow(distmat) != ncol(distmat)) {
     stop('Error: distmat must be a square distance matrix of dimension num_samples x num_samples')
   }
   if(distfun == 'hclust') {
-    cluster_results <- hclust(as.dist(distmat))
+    cluster_results <- hclust(as.dist(distmat), method=method)
     if(is.null(ncluster)) {
       # kgs method for determining optimal number of clusters
       op_k <- kgs(cluster_results, as.dist(my_distmat), maxclus = 15)
@@ -745,7 +993,7 @@ group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL) {
     cluster_assignments <- cutree(cluster_results, k=ncluster)
   } else if(distfun == 'pam') {
     if(is.null(ncluster)) ncluster = 4
-    cluster_results <- pam(distmat, ncluster)
+    cluster_results <- pam(distmat, ncluster, diss=T)
     cluster_assignments=cluster_results$clustering
   } else {
     stop("Error: Please specify distfun as either 'hclust' or 'pam'")
@@ -833,7 +1081,8 @@ plot_grouped_samples_tsne <- function(my_distmat, cluster_assignments, dest, per
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' dm <- plot_grouped_samples_dmap(my_EMD_mat, cluster_assignments, savedest, pt_sz=2, pt_label = myobj@@snames)
 #'
-plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5) {
+plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5, scale.y=1, angle=40, ...) {
+  extra_args <- list(...)
   #set.seed(15) #doesn't help because DiffusionMap function still produces non-reproducible results
   if(nrow(my_distmat) != ncol(my_distmat)) {
     stop('Error: my_distmat must be a square distance matrix')
@@ -856,11 +1105,16 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
   # Plot inhibitor groups using diffusion map
   covars <- data.frame(covar1 = 1:nrow(my_distmat))
   if(nrow(my_distmat) < 30) {
-    dm <- DiffusionMap(covars, distance = as.dist(my_distmat), rotate=TRUE, n_local=3) # define preset n_local for small datasets e.g. melanoma dataset
+    #dm <- DiffusionMap(covars, distance = as.dist(my_distmat), rotate=TRUE, n_local=3) # define preset n_local for small datasets e.g. melanoma dataset
+    extra_args['n_local'] <- 3
   } else {
-    dm <- DiffusionMap(covars, distance = as.dist(my_distmat), rotate=TRUE)
+    #dm <- DiffusionMap(covars, distance = as.dist(my_distmat), rotate=TRUE)
   }
   #plot(dm, 1:3, pch=20, col=cluster_assignments, cex.symbols = pt_sz, interactive=interactive)
+
+  dm_args <- c(list(data=covars, distance = as.dist(my_distmat)),
+               extra_args[names(extra_args) %in% c("n_local", "density_norm", "rotate", "k", "sigma", "verbose")])
+  dm <- do.call(DiffusionMap, dm_args)
 
   save(dm, file=paste(dest,'dm.RData',sep=""))
 
@@ -875,7 +1129,8 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
   #cluster_assignments_named <- sapply(cluster_assignments, function(x) paste("G-", x, sep=""))
   cluster_assignments_named <- sapply(cluster_assignments, function(x) intToUtf8(64+x))
   if(n_dim >= 3) {
-    plot(dm, 1:3, pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=T, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)))
+
+    plot(dm, 1:3, pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=T, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
 
   } else {
     plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
@@ -891,7 +1146,6 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
         res=300)
     cluster_assignments_named <- sapply(cluster_assignments, function(x) paste("G-", x, sep=""))
     if(n_dim >= 3) {
-      #plot(dm, 1:3, pch=20, col=factor(cluster_assignments_named), pal=palette(), cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5)
       s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20)
       s3d.coords <- s3d$xyz.convert(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3])
       text(s3d.coords$x, s3d.coords$y,             # x and y coordinates
@@ -900,7 +1154,6 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
     } else {
       plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
       if(!is.null(pt_label)) text(eigenvectors(dm)[,1:2],labels = pt_label, pos = 2, cex=0.4)
-      #plot(dm, 1:2, pch=20, col=factor(cluster_assignments_named), pal=palette(), cex = pt_sz)
     }
     dev.off()
   }
@@ -913,6 +1166,7 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
 #' @param myobj phemdObj object containing cell subtype relative frequency in @@data_cluster_weights slot
 #' @param cluster_assignments Vector containing group assignments for each sample in myobj
 #' @param dest Path to existing directory where output should be saved
+#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)
 #' @return None
 #' @examples
@@ -926,13 +1180,23 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #'
-plot_sample_histograms <- function(myobj, cluster_assignments, dest, cmap=NULL) {
+plot_sample_histograms <- function(myobj, cluster_assignments, dest, cell_model='monocle2', cmap=NULL) {
+  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   unlink(paste(dest, 'individual_inhibs', sep=''), recursive=TRUE)
   dir.create(file.path(paste(dest, 'individual_inhibs', sep='')), showWarnings = FALSE) # create folder for output
 
-  monocle_obj <- myobj@monocle_obj
-  labels <- pData(phenoData(monocle_obj))
-  state_labels <- as.numeric(labels$State)
+  if(cell_model == 'monocle2') {
+    monocle_obj <- myobj@monocle_obj
+    labels <- pData(phenoData(monocle_obj))
+    state_labels <- as.numeric(labels$State)
+  } else if(cell_model == 'seurat') {
+    seurat_obj <- myobj@seurat_obj
+    state_labels <- as.numeric(seurat_obj@ident)
+  } else {
+    stop('Error: cell_model must either be "monocle2" or "seurat"')
+  }
+
+
   cluster_weights <- myobj@data_cluster_weights
   #cmap <- rainbow(max(state_labels))
   if(is.null(cmap)) {
@@ -969,6 +1233,7 @@ plot_sample_histograms <- function(myobj, cluster_assignments, dest, cmap=NULL) 
 #' @param myobj phemdObj object containing cell subtype relative frequency in @@data_cluster_weights slot
 #' @param cluster_assignments Vector containing group assignments for each sample in myobj
 #' @param dest Path to existing directory where output should be saved
+#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)
 #' @return None
 #' @examples
@@ -983,10 +1248,22 @@ plot_sample_histograms <- function(myobj, cluster_assignments, dest, cmap=NULL) 
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #' plot_summary_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #'
-plot_summary_histograms <- function(myobj, cluster_assignments, dest, cmap=NULL) {
-  monocle_obj <- myobj@monocle_obj
-  labels <- pData(phenoData(monocle_obj))
-  state_labels <- as.numeric(labels$State)
+plot_summary_histograms <- function(myobj, cluster_assignments, dest, cell_model='monocle2', cmap=NULL) {
+  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
+  if(cell_model == 'monocle2') {
+    monocle_obj <- myobj@monocle_obj
+    labels <- pData(phenoData(monocle_obj))
+    state_labels <- as.numeric(labels$State)
+
+  } else if(cell_model == 'seurat') {
+    seurat_obj <- myobj@seurat_obj
+    state_labels <- as.numeric(seurat_obj@ident)
+
+  } else {
+    stop('Error: cell_model must be either "monocle2" or "seurat"')
+  }
+
+
   cluster_weights <- myobj@data_cluster_weights
 
   if(is.null(cmap)) {
@@ -1043,6 +1320,7 @@ plot_summary_histograms <- function(myobj, cluster_assignments, dest, cmap=NULL)
 #' plot_cell_yield(myobj, savedest, cluster_assignments, font_sz = 0.8)
 #'
 plot_cell_yield <- function(myobj, dest, labels=NULL, cmap=NULL, font_sz = 0.6, w=8, h=9.5) {
+  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   nsample <- length(myobj@data)
   cell_yield <- rep(0, nsample)
   for(i in 1:nsample) {
@@ -1079,4 +1357,40 @@ plot_cell_yield <- function(myobj, dest, labels=NULL, cmap=NULL, font_sz = 0.6, 
   title(xlab="Cell yield (number of cells)", line=3, cex.lab=1.5)
 
   dev.off()
+}
+
+
+
+#' @title Prints cell yield of each sample as a table
+#' @description Prints cell yield (number of viable cells) of each single-cell sample in decreasing order
+#' @param myobj phemdObj object containing expression data for each sample in 'data' slot
+#' @param dest Path to existing directory where output should be saved
+#' @return None
+#' @examples
+#' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+#' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
+#' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
+#' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
+#' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
+#' my_EMD_mat <- compare_samples(my_phemdObj_final)
+#' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
+#' print_cluster_assignments(cluster_assignments, myobj, savedest)
+#' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
+#' print_cell_yield(myobj, savedest, cluster_assignments)
+#'
+print_cell_yield <- function(myobj, dest) {
+  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
+  nsample <- length(myobj@data)
+  cell_yield <- rep(0, nsample)
+  for(i in 1:nsample) {
+    cell_yield[i] <- nrow(myobj@data[[i]])
+  }
+
+  order_idx <- order(cell_yield, decreasing=F)
+  cell_yield_ordered <- cell_yield[order_idx]
+  snames_ordered <- myobj@snames[order_idx]
+  cell_yield_tab <- cbind.data.frame(snames_ordered, cell_yield_ordered)
+  colnames(cell_yield_tab) <- c('sample_ID', 'cell_yield')
+
+  write.table(cell_yield_tab, file=paste(dest, 'cell_yield_tab.txt', sep=''), sep='\t', quote=F, row.names=F, col.names=T)
 }

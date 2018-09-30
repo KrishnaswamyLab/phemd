@@ -10,4 +10,6 @@ setClass("phemdObj",
                  subsampled_bool = "logical",
                  monocle_obj = "CellDataSet",
                  data_cluster_weights = "matrix",
-                 emd_dist_mat = "matrix"))
+                 emd_dist_mat = "matrix",
+                 seurat_obj = "seurat",
+                 experiment_ids = "character"))
