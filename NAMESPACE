@@ -1,3 +1,4 @@
+import(VGAM) #load 1.0-5
 import(monocle)
 import(RColorBrewer)
 import(igraph)
@@ -12,7 +13,7 @@ import(scatterplot3d)
 import(maptree)
 import(pheatmap)
 import(Seurat)
-import(VGAM)
+
 
 exportClasses(phemdObj)
 export(create_dataobj)
