@@ -12,6 +12,7 @@ import(scatterplot3d)
 import(maptree)
 import(pheatmap)
 import(Seurat)
+import(VGAM)
 
 exportClasses(phemdObj)
 export(create_dataobj)
