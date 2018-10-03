@@ -200,7 +200,6 @@ create_dataobj <- function(data, markers, snames, datatype='list', valtype='coun
   }
   data_obj <- new('phemdObj', data = all_data, markers = markers, snames = snames)
 
-
   return(data_obj)
 }
 
