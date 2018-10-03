@@ -166,10 +166,23 @@ assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labe
 #' @param all_data List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}
 #' @param markers Vector containing marker names (i.e. column names of \code{all_data})
 #' @param snames Vector containing sample names (i.e. names of samples contained in \code{all_data})
+#' @param datatype Either "list" or "sce" (SingleCellExperiment with genes x cells)
+#' @param valtype Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"
 #' @return 'phemdObj' object containing raw multi-sample expression data and associated metadata
 #' @examples
 #' my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
-create_dataobj <- function(all_data, markers, snames) {
+create_dataobj <- function(data, markers, snames, datatype='list', valtype='counts') {
+  if(datatype == 'list') {
+    all_data <- data
+  } else if(datatype == 'sce') {
+    if(valtype %in% names(assays(data))) {
+      stop(sprintf('Error: %s not found in input SingleCellExperiment', valtype))
+    }
+    all_data <- t(assay(data, valtype)) # generally SCE objects are genes x cells; transpose
+  } else {
+    stop('Error: Input datatype must be either "list" or "sce" (SingleCellExperiment)')
+  }
+
   nsample <- length(all_data)
   if(nsample == 0) stop('all_data is empty (length=0)')
   stopifnot(nsample == length(snames))
@@ -185,10 +198,12 @@ create_dataobj <- function(all_data, markers, snames) {
   if(sum(nmarker_vec - nmarker_vec[1]) != 0) {
     stop(sprintf("Error: Sample %d has a different number of columns than Sample 1", which(nmarker_vec-nmarker_vec[1] != 0)))
   }
-
   data_obj <- new('phemdObj', data = all_data, markers = markers, snames = snames)
+
+
   return(data_obj)
 }
+
 
 #' @title Attach 'seurat' object to 'phemdObj' object
 #' @description Allows user to attach batch-normalized reference cell data from Seurat into 'phemdObj' object containing raw expression data and metadata
@@ -215,6 +230,9 @@ attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
   return(phemd_obj)
 }
 
+
+#se0 <- SummarizedExperiment(assays=SimpleList(counts=counts),
+                           # colData=colData)
 
 #' @title Remove samples with too few cells
 #' @description Removes samples from phemdObj that have fewer cells than \code{min_sz}
@@ -715,7 +733,7 @@ plot_heatmaps <- function(obj, path, cell_model='monocle2', selected_genes=NULL,
              height=h)
 
   } else {
-    stop('Error: cell_model must either be "monocle2" or "seurat"')
+    stop('Error: cell_model must be either "monocle2" or "seurat"')
   }
 }
 
@@ -865,7 +883,7 @@ cluster_individual_samples <- function(obj, verbose=F, cell_model='monocle2') {
 
     obj@data_cluster_weights <- cluster_weights
   } else {
-    stop('Error: cell_model must either be "monocle2" or "seurat"')
+    stop('Error: cell_model must be either "monocle2" or "seurat"')
   }
 
   return(obj)

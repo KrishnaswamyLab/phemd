@@ -96,7 +96,7 @@ The result of the code above is a Monocle 2 object stored in *myobj\@monocle_obj
 ```{r echo=T, results = 'hide'}
 savedest <- './example_output/'
 dir.create(savedest, showWarnings = FALSE) # create folder for output
-cmap <- plot_embeddings(myobj, savedest, w=6,h=4)
+cmap <- plot_embeddings(myobj, savedest, cell_model='monocle2', w=6,h=4)
 ```
 
 ```{r echo=F, fig.width=6, fig.height=4}
@@ -107,7 +107,7 @@ display(img, method = "raster")
 To visualize the expression profiles of the cell subtypes, we can plot a heatmap and save to file as such:
 
 ```{r echo=T, results = 'hide'}
-plot_heatmaps(myobj, savedest, heatmap_genes) # if heatmap_genes is not specified, all genes (i.e. all columns of myobj@data_aggregate) will be used
+plot_heatmaps(myobj, savedest, cell_model='monocle2', selected_genes=heatmap_genes) # if heatmap_genes is not specified, all genes (i.e. all columns of myobj@data_aggregate) will be used
 ```
 
 ```{r echo=F}
@@ -174,7 +174,7 @@ To plot the cell subtype distribution on a per-sample basis, use the following p
 
 ```{r echo=T, results = 'hide'}
 # Plot cell subtype distribution (histogram) for each sample
-plot_sample_histograms(myobj, group_assignments, savedest, cmap)
+plot_sample_histograms(myobj, group_assignments, savedest, cell_model='monocle2', cmap)
 ```
 
 ```{r echo=F, fig.width=8, fig.height=4.5}
@@ -188,7 +188,7 @@ To plot cell subtype histograms summarizing groups of similar samples (bin-wise 
 
 ```{r echo=T, results = 'hide'}
 # Plot representative cell subtype distribution (histogram) for each group of samples
-plot_summary_histograms(myobj, group_assignments, savedest, cmap)
+plot_summary_histograms(myobj, group_assignments, savedest, cell_model='monocle2', cmap)
 ```
 
 ```{r echo=F, fig.width=10, fig.height=2.5}

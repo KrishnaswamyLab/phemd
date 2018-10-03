@@ -9,7 +9,7 @@ License: GPL-2
 Encoding: UTF-8
 LazyData: true
 Depends:
-Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2, Seurat
+Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2, Seurat, VGAM (== 1.0-5)
 Suggests: knitr
 VignetteBuilder: knitr
 biocViews: Clustering, ComparativeGenomics, Proteomics, Transcriptomics, Sequencing, DimensionReduction, SingleCell, DataRepresentation, Visualization, MultipleComparison
