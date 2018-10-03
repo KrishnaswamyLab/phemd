@@ -8,8 +8,8 @@ Description: Package for comparing and generating a low-dimensional embedding of
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Depends:
-Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2, Seurat, VGAM (== 1.0-5)
+Depends: VGAM (== 1.0-5)
+Imports: monocle, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, roxygen2, Seurat
 Suggests: knitr
 VignetteBuilder: knitr
 biocViews: Clustering, ComparativeGenomics, Proteomics, Transcriptomics, Sequencing, DimensionReduction, SingleCell, DataRepresentation, Visualization, MultipleComparison

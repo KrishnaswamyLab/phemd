@@ -1,4 +1,4 @@
-import(VGAM) #load 1.0-5
+#import(VGAM) #load 1.0-5
 import(monocle)
 import(RColorBrewer)
 import(igraph)
