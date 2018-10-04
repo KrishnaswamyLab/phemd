@@ -4,7 +4,7 @@
 \alias{cluster_individual_samples}
 \title{Computes cell subtype abundances for each sample}
 \usage{
-cluster_individual_samples(obj, verbose = F)
+cluster_individual_samples(obj, verbose = F, cell_model = "monocle2")
 }
 \arguments{
 \item{obj}{'phemdObj' object containing single-cell expression data of all samples in @data slot and Monocle2 object (already embedded and ordered) in @monocle_obj slot}
@@ -21,11 +21,12 @@ Takes as input an phemdObj with all single-cell expression data of all single-ce
 \code{embed_cells} and \code{order_cells} need to be called before calling this function.
 }
 \examples{
+\dontrun{
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
-
+}
 }

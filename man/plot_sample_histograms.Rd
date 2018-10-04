@@ -4,7 +4,8 @@
 \alias{plot_sample_histograms}
 \title{Plot cell subtype frequency histograms for each sample}
 \usage{
-plot_sample_histograms(myobj, cluster_assignments, dest, cmap = NULL)
+plot_sample_histograms(myobj, cluster_assignments, dest,
+  cell_model = "monocle2", cmap = NULL)
 }
 \arguments{
 \item{myobj}{phemdObj object containing cell subtype relative frequency in @data_cluster_weights slot}
@@ -12,6 +13,8 @@ plot_sample_histograms(myobj, cluster_assignments, dest, cmap = NULL)
 \item{cluster_assignments}{Vector containing group assignments for each sample in myobj}
 
 \item{dest}{Path to existing directory where output should be saved}
+
+\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
 \item{cmap}{Vector containing colors by which histogram bars should be colored (optional)}
 }
@@ -25,6 +28,7 @@ Plots relative frequency ("weights") of cell subtypes ("bins" or "signatures") i
 \code{group_samples} must be called before calling this function. Saves plots in directory called "individual_inhibs"
 }
 \examples{
+\dontrun{
 my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
@@ -34,5 +38,5 @@ my_EMD_mat <- compare_samples(my_phemdObj_final)
 cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 print_cluster_assignments(cluster_assignments, myobj, savedest)
 plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-
+}
 }

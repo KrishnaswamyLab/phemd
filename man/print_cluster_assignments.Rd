@@ -23,6 +23,7 @@ Takes vector of cluster assignments and phemdObj containing sample names and wri
 Order of samples in obj@snames is assumed to be the same as the order of group assignments in cluster_assignments
 }
 \examples{
+\dontrun{
 my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
@@ -30,5 +31,5 @@ my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
 cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 print_cluster_assignments(cluster_assignments, myobj, savedest)
-
+}
 }

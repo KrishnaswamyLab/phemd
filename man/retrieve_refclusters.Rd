@@ -4,10 +4,15 @@
 \alias{retrieve_refclusters}
 \title{Retrieve reference cell clusters}
 \usage{
-retrieve_refclusters(obj)
+retrieve_refclusters(obj, cell_model = "monocle2",
+  expn_type = "aligned", ndim = 10)
 }
 \arguments{
 \item{obj}{phemdObj struct containing Monocle2 object and underlying expression data}
+
+\item{cell_model}{String representing data model for cell state space (Seurat or Monocle 2)}
+
+\item{expn_type}{String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)}
 }
 \value{
 List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
@@ -19,5 +24,7 @@ Takes initial phemdObj struct and returns cell clusters as assigned by clusterin
 Private method (not exported in namespace)
 }
 \examples{
-cluster_expression_data <- retrieve_reference_clusters(my_phemdObj)
+\dontrun{
+cluster_expression_data <- retrieve_refclusters(my_phemdObj)
+}
 }

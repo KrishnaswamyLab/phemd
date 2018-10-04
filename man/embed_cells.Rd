@@ -21,8 +21,10 @@ Takes as input an phemdObj with aggregated data and returns same phemdObj with M
 Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregate_samples} needs to be called before running this function.
 }
 \examples{
+\dontrun{
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 my_phemdObj_lg <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+}
 }

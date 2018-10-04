@@ -4,10 +4,12 @@
 \alias{generate_gdm}
 \title{Computes ground distance matrix based on cell embedding}
 \usage{
-generate_gdm(obj)
+generate_gdm(obj, cell_model = "monocle2")
 }
 \arguments{
 \item{obj}{'phemdObj' object containing Monocle2 object (already embedded and ordered) in @monocle_obj slot}
+
+\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 }
 \value{
 phemdObj with ground distance matrix (to be used in EMD computation) in @data_cluster_weights slot
@@ -19,6 +21,7 @@ Takes as input an phemdObj with Monocle2 object (already embedded and ordered) i
 \code{embed_cells} and \code{order_cells} need to be called before calling this function. Requires 'igraph' package
 }
 \examples{
+\dontrun{
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -26,5 +29,5 @@ my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', si
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
-
+}
 }

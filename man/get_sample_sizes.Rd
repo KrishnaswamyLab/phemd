@@ -19,5 +19,7 @@ Takes initial list of single-cell samples and returns vector containing number o
 Private method (not exported in namespace)
 }
 \examples{
+\dontrun{
 num_cells_in_each_sample <- get_sample_sizes(my_data_list)
+}
 }

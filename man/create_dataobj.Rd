@@ -4,14 +4,19 @@
 \alias{create_dataobj}
 \title{Create 'phemdObj' object}
 \usage{
-create_dataobj(all_data, markers, snames)
+create_dataobj(data, markers, snames, datatype = "list",
+  valtype = "counts")
 }
 \arguments{
-\item{all_data}{List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}}
-
 \item{markers}{Vector containing marker names (i.e. column names of \code{all_data})}
 
 \item{snames}{Vector containing sample names (i.e. names of samples contained in \code{all_data})}
+
+\item{datatype}{Either "list" or "sce" (SingleCellExperiment with genes x cells)}
+
+\item{valtype}{Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"}
+
+\item{all_data}{List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}}
 }
 \value{
 'phemdObj' object containing raw multi-sample expression data and associated metadata
@@ -20,8 +25,10 @@ create_dataobj(all_data, markers, snames)
 Wrapper function to create 'phemdObj' object containing raw expression data and metadata
 }
 \details{
-Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary)
+Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary).
 }
 \examples{
+\dontrun{
 my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
+}
 }

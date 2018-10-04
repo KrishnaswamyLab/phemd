@@ -19,6 +19,7 @@ Takes as input an phemdObj with cell subtype relative frequencies for each sampl
 Requires 'transport' and 'pracma' packages
 }
 \examples{
+\dontrun{
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -27,4 +28,5 @@ my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
+}
 }

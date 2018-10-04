@@ -12,7 +12,9 @@
 #' @param data_list List of length num_samples (each element has dimension num_cells x num_markers)
 #' @return Vector of length num_samples representing number of cells in each sample
 #' @examples
+#' \dontrun{
 #' num_cells_in_each_sample <- get_sample_sizes(my_data_list)
+#' }
 
 get_sample_sizes <- function(data_list) {
   sample_sizes <- rep(0, length(data_list))
@@ -30,7 +32,9 @@ get_sample_sizes <- function(data_list) {
 #' @param expn_type String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)
 #' @return List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
 #' @examples
+#' \dontrun{
 #' cluster_expression_data <- retrieve_refclusters(my_phemdObj)
+#' }
 
 retrieve_refclusters <- function(obj, cell_model='monocle2', expn_type='aligned', ndim=10) {
   ref_clusters = list();
@@ -74,7 +78,9 @@ retrieve_refclusters <- function(obj, cell_model='monocle2', expn_type='aligned'
 #' @param ref_clusters list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)
 #' @return List of names; element \var{i} represents the name of the cell in cluster \var{i} that is closest to the centroid (arithmetic mean) of cluster \var{i}
 #' @examples
+#' \dontrun{
 #' centroid_names <- identify_centroids(ref_clusters, data_ordered)
+#' }
 
 identify_centroids <- function(ref_clusters, data_ordered) {
   centroids = list()
@@ -98,7 +104,9 @@ identify_centroids <- function(ref_clusters, data_ordered) {
 #' @param ref_clusters list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)
 #' @return Matrix of dimension num_cluster x num_markers; row \var{i} representing the arithmetic centroid of cluster \var{i}
 #' @examples
+#' \dontrun{
 #' cluster_centroids <- get_arithmetic_centroids(ref_clusters)
+#' }
 
 get_arithmetic_centroids <- function(ref_clusters) {
   if(length(ref_clusters) < 1) stop('Error: input requires at least 1 reference cluster')
@@ -139,7 +147,9 @@ assign_cell_cluster <- function(cur_cells, ref_clusters) {
 #' @param ref_cell_labels Vector of length \var{num_monocle_cells} containing Monocle 2 cell branch assignments
 #' @return Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}
 #' @examples
+#' \dontrun{
 #' cur_cells_cluster_labels <- assign_cell_cluster_nearest_node(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels)
+#' }
 assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labels, data_model='monocle') {
   if(nrow(ref_cells) != length(ref_cell_labels)) stop("Error: number of cells and cell labels do not match")
 
@@ -156,9 +166,12 @@ assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labe
   return(assigned)
 }
 
-#' @title Models expression data as normally distributed
+#' @title Models expression data using generalized linear model with Gaussian error
 #' @description Useful for modeling pre-normalized expression data
 #' @details Private method (not to be called by user directly). Requires VGAM package.
+#' @param dispersion Always set to 0 when called internally
+#' @param parallel Always set to FALSE
+#' @param zero Set to NULL
 gaussianff_local <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
   if (!is.Numeric(dispersion, length.arg = 1) || dispersion <
     0) {
@@ -338,7 +351,7 @@ gaussianff_local <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
 
 #' @title Create 'phemdObj' object
 #' @description Wrapper function to create 'phemdObj' object containing raw expression data and metadata
-#' @details Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary)
+#' @details Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary).
 #' @param all_data List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}
 #' @param markers Vector containing marker names (i.e. column names of \code{all_data})
 #' @param snames Vector containing sample names (i.e. names of samples contained in \code{all_data})
@@ -346,7 +359,9 @@ gaussianff_local <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
 #' @param valtype Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"
 #' @return 'phemdObj' object containing raw multi-sample expression data and associated metadata
 #' @examples
+#' \dontrun{
 #' my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
+#' }
 create_dataobj <- function(data, markers, snames, datatype='list', valtype='counts') {
   if(datatype == 'list') {
     all_data <- data
@@ -387,7 +402,9 @@ create_dataobj <- function(data, markers, snames, datatype='list', valtype='coun
 #' @param batch.colname Name of column in Seurat object that denotes batch ID
 #' @return 'phemdObj' object containing with attached Seurat object
 #' @examples
+#' \dontrun{
 #' my_phemdObj <- attach_seuratobj(my_phemdObj, my_seuratObj)
+#' }
 attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
   stopifnot(class(seurat_obj) == 'seurat')
   # ensure cluster names are 1-indexed
@@ -405,10 +422,6 @@ attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
   return(phemd_obj)
 }
 
-
-#se0 <- SummarizedExperiment(assays=SimpleList(counts=counts),
-                           # colData=colData)
-
 #' @title Remove samples with too few cells
 #' @description Removes samples from phemdObj that have fewer cells than \code{min_sz}
 #' @details Note: If used, this function must be called before (and not after) the \code{aggregate_samples} function is called
@@ -416,7 +429,10 @@ attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
 #' @param min_sz Minimum number of cells in each sample to be retained
 #' @return 'phemdObj' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
 #' @examples
+#' \dontrun{
+#' my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
+#' }
 remove_tiny_samples <- function(obj, min_sz=20) {
   stopifnot(class(obj) == 'phemdObj')
   stopifnot(mode(min_sz) == 'numeric')
@@ -445,8 +461,11 @@ remove_tiny_samples <- function(obj, min_sz=20) {
 #' @param max_cells Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run
 #' @return Same as input 'phemdObj' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
 #' @examples
+#' \dontrun{
+#' my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
+#' }
 aggregate_samples <- function(obj, max_cells=12000) {
   stopifnot(class(obj) == 'phemdObj')
   stopifnot(mode(max_cells) == 'numeric')
@@ -491,9 +510,11 @@ aggregate_samples <- function(obj, max_cells=12000) {
 #' @param selected_genes Vector containing names of genes to use for downstream analyses
 #' @return Same as input 'phemdObj' object after performing feature-selection based dimensionality reduction on aggregated expression data
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
+#' }
 select_features <- function(obj, selected_genes) {
   if(isempty(obj@data_aggregate)) stop('slot "data_aggregate" is empty; please call aggregate_samples() before running select_features()')
   all_aggregate_data <- obj@data_aggregate
@@ -514,10 +535,12 @@ select_features <- function(obj, selected_genes) {
 #' @param data_model One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}
 #' @return Same as input 'phemdObj' object with additional Monocle2 object in @@monocle_obj slot
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 #' my_phemdObj_lg <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+#' }
 embed_cells <- function(obj, data_model = 'negbinomial_sz', ...) {
   extra_args <- list(...)
 
@@ -584,11 +607,13 @@ embed_cells <- function(obj, data_model = 'negbinomial_sz', ...) {
 #' @param obj 'phemdObj' object containing initial Monocle 2 object
 #' @return Same as input 'phemdObj' object with updated Monocle2 object in @@monocle_obj slot containing cell state and pseudotime assignments
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
+#' }
 order_cells <- function(obj, ...) {
   monocle_obj <- obj@monocle_obj
   if(ncol(monocle_obj) == 0) stop('slot "monocle_obj" is empty; please call embed_cells() before running order_cells()')
@@ -611,12 +636,14 @@ order_cells <- function(obj, ...) {
 #' @param cmap User-specified colormap to use to color cell state embedding (optional)
 #' @return Colormap (vector of colors) used to color Monocle2 cell state embedding
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
+#' }
 plot_embeddings <- function(obj, path, cell_model='monocle2', cmap=NULL, w=4, h=5, pt_sz = 1, ndims=NULL) {
   if(substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
   if(cell_model == 'monocle2') {
@@ -756,6 +783,7 @@ plot_embeddings <- function(obj, path, cell_model='monocle2', cmap=NULL, w=4, h=
 #' @param selected_genes Vector containing gene names to include in heatmap (optional)
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -763,6 +791,7 @@ plot_embeddings <- function(obj, path, cell_model='monocle2', cmap=NULL, w=4, h=
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 #' plot_heatmaps(my_phemdObj_monocle, savedest)
+#' }
 plot_heatmaps <- function(obj, path, cell_model='monocle2', selected_genes=NULL, w=8, h=5) {
   if(substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
   if(cell_model == 'monocle2') {
@@ -939,13 +968,14 @@ draw_colnames_45 <- function(coln, gaps, ...) {
 #' @param verbose Boolean that determines whether progress (sequential processing of samples) should be printed. FALSE by default
 #' @return phemdObj with cell subtype frequencies of each sample in @@data_cluster_weights slot
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
-#'
+#' }
 cluster_individual_samples <- function(obj, verbose=F, cell_model='monocle2') {
   stopifnot(class(obj) == 'phemdObj')
   all_data <- obj@data
@@ -1073,6 +1103,7 @@ cluster_individual_samples <- function(obj, verbose=F, cell_model='monocle2') {
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @return phemdObj with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -1080,7 +1111,7 @@ cluster_individual_samples <- function(obj, verbose=F, cell_model='monocle2') {
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
-#'
+#' }
 generate_gdm <- function(obj, cell_model='monocle2') {
   stopifnot(class(obj) == 'phemdObj')
 
@@ -1122,6 +1153,7 @@ generate_gdm <- function(obj, cell_model='monocle2') {
 #' @param obj 'phemdObj' object containing cell subtype relative frequencies for each sample in @@data_cluster_weights slot and ground distance matrix (representing cell subtype dissimilarity) in @@emd_dist_mat slot
 #' @return Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 #' @examples
+#' \dontrun{
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 #' my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -1130,6 +1162,7 @@ generate_gdm <- function(obj, cell_model='monocle2') {
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 #' my_EMD_mat <- compare_samples(my_phemdObj_final)
+#' }
 compare_samples <- function(obj) {
   stopifnot(class(obj) == 'phemdObj')
   cluster_weights <- obj@data_cluster_weights
@@ -1163,15 +1196,17 @@ compare_samples <- function(obj) {
 #' @param distmat Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 #' @param distfun Method of partitioning network of samples (currently either 'hclust' or 'pam')
 #' @param ncluster Optional parameter specifying total number of sample groups
+#' @param method Optional parameter for hierarchical clustering (see "hclust" documentation)
 #' @return Vector containing group assignments for each sample (same order as row-order of distmat) based on user-specified partitioning method (e.g. hierarchical clustering)
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 #' my_EMD_mat <- compare_samples(my_phemdObj_final)
 #' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-#'
+#' }
 group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='complete') {
   ## Identify similar groups of inhibitors (hierarchical clustering for now)
   if(nrow(distmat) != ncol(distmat)) {
@@ -1203,6 +1238,7 @@ group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='co
 #' @param dest Path to existing directory where output should be saved
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
@@ -1210,7 +1246,7 @@ group_samples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='co
 #' my_EMD_mat <- compare_samples(my_phemdObj_final)
 #' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
-#'
+#' }
 print_cluster_assignments <- function(cluster_assignments, obj, dest) {
   snames <- obj@snames
   unlink(paste(dest, 'sample_groups', sep=''), recursive=TRUE)
@@ -1266,6 +1302,7 @@ plot_grouped_samples_tsne <- function(my_distmat, cluster_assignments, dest, per
 #' @param cmap Vector containing colors by which points should be colored (corresponding to cluster_assignments)
 #' @return DiffusionMap object containing biological sample embedding and associated metadata
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
@@ -1274,7 +1311,7 @@ plot_grouped_samples_tsne <- function(my_distmat, cluster_assignments, dest, per
 #' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' dm <- plot_grouped_samples_dmap(my_EMD_mat, cluster_assignments, savedest, pt_sz=2, pt_label = myobj@@snames)
-#'
+#' }
 plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5, scale.y=1, angle=40, ...) {
   extra_args <- list(...)
   #set.seed(15) #doesn't help because DiffusionMap function still produces non-reproducible results
@@ -1364,6 +1401,7 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
@@ -1373,7 +1411,7 @@ plot_grouped_samples_dmap <- function(my_distmat, cluster_assignments, dest, pt_
 #' cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-#'
+#' }
 plot_sample_histograms <- function(myobj, cluster_assignments, dest, cell_model='monocle2', cmap=NULL) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   unlink(paste(dest, 'individual_inhibs', sep=''), recursive=TRUE)
@@ -1431,6 +1469,7 @@ plot_sample_histograms <- function(myobj, cluster_assignments, dest, cell_model=
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
@@ -1441,7 +1480,7 @@ plot_sample_histograms <- function(myobj, cluster_assignments, dest, cell_model=
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #' plot_summary_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-#'
+#' }
 plot_summary_histograms <- function(myobj, cluster_assignments, dest, cell_model='monocle2', cmap=NULL) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   if(cell_model == 'monocle2') {
@@ -1502,6 +1541,7 @@ plot_summary_histograms <- function(myobj, cluster_assignments, dest, cell_model
 #' @param font_sz Scaling factor for font size of sample names in barplot
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
@@ -1512,7 +1552,7 @@ plot_summary_histograms <- function(myobj, cluster_assignments, dest, cell_model
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #' plot_cell_yield(myobj, savedest, cluster_assignments, font_sz = 0.8)
-#'
+#' }
 plot_cell_yield <- function(myobj, dest, labels=NULL, cmap=NULL, font_sz = 0.6, w=8, h=9.5) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   nsample <- length(myobj@data)
@@ -1561,6 +1601,7 @@ plot_cell_yield <- function(myobj, dest, labels=NULL, cmap=NULL, font_sz = 0.6, 
 #' @param dest Path to existing directory where output should be saved
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 #' my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 #' cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
@@ -1571,7 +1612,7 @@ plot_cell_yield <- function(myobj, dest, labels=NULL, cmap=NULL, font_sz = 0.6, 
 #' print_cluster_assignments(cluster_assignments, myobj, savedest)
 #' plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
 #' print_cell_yield(myobj, savedest, cluster_assignments)
-#'
+#' }
 print_cell_yield <- function(myobj, dest) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   nsample <- length(myobj@data)

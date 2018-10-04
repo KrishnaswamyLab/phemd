@@ -6,7 +6,7 @@
 \usage{
 plot_grouped_samples_dmap(my_distmat, cluster_assignments, dest,
   pt_sz = 1, n_dim = 3, pt_label = NULL, cmap = NULL, w = 8,
-  h = 5)
+  h = 5, scale.y = 1, angle = 40, ...)
 }
 \arguments{
 \item{my_distmat}{phemdObj object containing sample names in @snames slot}
@@ -33,6 +33,7 @@ Visualizes diffusion map for network of samples based on square distance matrix 
 Requires 'destiny' package
 }
 \examples{
+\dontrun{
 my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
@@ -41,5 +42,5 @@ my_EMD_mat <- compare_samples(my_phemdObj_final)
 cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
 print_cluster_assignments(cluster_assignments, myobj, savedest)
 dm <- plot_grouped_samples_dmap(my_EMD_mat, cluster_assignments, savedest, pt_sz=2, pt_label = myobj@snames)
-
+}
 }

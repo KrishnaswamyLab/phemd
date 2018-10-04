@@ -4,7 +4,8 @@
 \alias{assign_cell_cluster_nearest_node}
 \title{Assign cells to a reference cell subtype}
 \usage{
-assign_cell_cluster_nearest_node(cur_cells, ref_cells, ref_cell_labels)
+assign_cell_cluster_nearest_node(cur_cells, ref_cells, ref_cell_labels,
+  data_model = "monocle")
 }
 \arguments{
 \item{cur_cells}{Matrix of cells to be assigned to clusters (Dim: \var{num_cells} x \var{num_markers})}
@@ -23,5 +24,7 @@ Assigns each cell in \code{cur_cells} to a cluster based on nearest cell in Mono
 Private method (not exported in namespace). Uses RANN package for fast knn search
 }
 \examples{
+\dontrun{
 cur_cells_cluster_labels <- assign_cell_cluster_nearest_node(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels)
+}
 }

@@ -4,13 +4,15 @@
 \alias{plot_heatmaps}
 \title{Save Monocle2 heatmap plot to folder}
 \usage{
-plot_heatmaps(obj, path, selected_genes = NULL, upweighted_idx = NULL,
-  upweight_factor = NULL)
+plot_heatmaps(obj, path, cell_model = "monocle2",
+  selected_genes = NULL, w = 8, h = 5)
 }
 \arguments{
 \item{obj}{'phemdObj' object containing Monocle 2 object}
 
 \item{path}{Path to destination folder (must already exist)}
+
+\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
 \item{selected_genes}{Vector containing gene names to include in heatmap (optional)}
 }
@@ -24,6 +26,7 @@ Takes as input an phemdObj with Monocle2 object (already embedded and ordered) a
 \code{embed_cells} and \code{order_cells} need to be called before calling this function. Required additional package: 'pheatmap'
 }
 \examples{
+\dontrun{
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
 my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
@@ -31,4 +34,5 @@ my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', si
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 plot_heatmaps(my_phemdObj_monocle, savedest)
+}
 }

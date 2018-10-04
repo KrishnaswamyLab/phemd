@@ -2,12 +2,12 @@
 % Please edit documentation in R/methods.R
 \name{identify_centroids}
 \alias{identify_centroids}
-\title{Identify cluster centroids}
+\title{Identify cluster centroids (cell names)}
 \usage{
 identify_centroids(ref_clusters, data_ordered)
 }
 \arguments{
-\item{obj}{phemdObj containing Monocle2 object and underlying expression data}
+\item{ref_clusters}{list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)}
 }
 \value{
 List of names; element \var{i} represents the name of the cell in cluster \var{i} that is closest to the centroid (arithmetic mean) of cluster \var{i}
@@ -19,5 +19,7 @@ Takes initial list and returns list of cell names representing centroid of clust
 Private method (not exported in namespace)
 }
 \examples{
-my_centroids <- identify_centroids(my_phemdObj)
+\dontrun{
+centroid_names <- identify_centroids(ref_clusters, data_ordered)
+}
 }

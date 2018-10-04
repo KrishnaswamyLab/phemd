@@ -4,7 +4,8 @@
 \alias{group_samples}
 \title{Performs community detection on sample-sample distance matrix}
 \usage{
-group_samples(distmat, distfun = "hclust", ncluster = NULL)
+group_samples(distmat, distfun = "hclust", ncluster = NULL,
+  method = "complete")
 }
 \arguments{
 \item{distmat}{Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples}
@@ -12,6 +13,8 @@ group_samples(distmat, distfun = "hclust", ncluster = NULL)
 \item{distfun}{Method of partitioning network of samples (currently either 'hclust' or 'pam')}
 
 \item{ncluster}{Optional parameter specifying total number of sample groups}
+
+\item{method}{Optional parameter for hierarchical clustering (see "hclust" documentation)}
 }
 \value{
 Vector containing group assignments for each sample (same order as row-order of distmat) based on user-specified partitioning method (e.g. hierarchical clustering)
@@ -23,11 +26,12 @@ Takes sample-sample distance matrix as input and returns group assignments for e
 By default, uses 'kgs' (Kelley-Gardner-Sutcliffe) method for determining optimal number of groups. Alternatively, can take user-specified number of groups). Requires 'cluster' and 'maptree' packages.
 }
 \examples{
+\dontrun{
 my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
 cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-
+}
 }

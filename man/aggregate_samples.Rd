@@ -21,6 +21,9 @@ Takes initial phemdObj and returns phemdObj with additional data frame in slot @
 Subsamples cells as necessary based on \code{max_cells}. If subsampling is performed, an equal number of cells are subsampled from each sample
 }
 \examples{
+\dontrun{
+my_phemdObj <- create_dataobj(all_expn_data, genes_measured, my_sample_names)
 my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
+}
 }
