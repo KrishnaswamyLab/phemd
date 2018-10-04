@@ -156,6 +156,182 @@ assign_cell_cluster_nearest_node <- function(cur_cells, ref_cells, ref_cell_labe
   return(assigned)
 }
 
+#' @title Models expression data as normally distributed
+#' @description Useful for modeling pre-normalized expression data
+#' @details Private method (not to be called by user directly). Requires VGAM package.
+gaussianff_local <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
+  if (!is.Numeric(dispersion, length.arg = 1) || dispersion <
+    0) {
+    stop("bad input for argument 'dispersion'")
+  }
+  estimated.dispersion <- dispersion == 0
+  new("vglmff",
+    blurb = c(
+      "Vector linear/additive model\n",
+      "Links:    identitylink for Y1,...,YM"
+    ), constraints = eval(substitute(expression({
+      constraints <- cm.VGAM(matrix(1, M, 1),
+        x = x, bool = .parallel,
+        constraints = constraints
+      )
+      constraints <- cm.zero.VGAM(constraints,
+        x = x, .zero,
+        M = M, predictors.names = predictors.names, M1 = 1
+      )
+    }), list(.parallel = parallel, .zero = zero))), deviance = function(mu,
+                                                                            y, w, residuals = FALSE, eta, extra = NULL) {
+      M <- if (is.matrix(y)) {
+        ncol(y)
+      } else {
+        1
+      }
+      n <- if (is.matrix(y)) {
+        nrow(y)
+      } else {
+        length(y)
+      }
+      wz <- VGAM.weights.function(w = w, M = M, n = n)
+      if (residuals) {
+        if (M > 1) {
+          U <- vchol(wz, M = M, n = n)
+          temp <- mux22(U, y - mu,
+            M = M, upper = TRUE,
+            as.matrix = TRUE
+          )
+          dimnames(temp) <- dimnames(y)
+          temp
+        }
+        else {
+          (y - mu) * sqrt(wz)
+        }
+      }
+      else {
+        ResSS.vgam(y - mu, wz = wz, M = M)
+      }
+    }, infos = eval(substitute(function(...) {
+      list(
+        M1 = 1, Q1 = 1, expected = TRUE, multipleResponses = TRUE,
+        quasi.type = TRUE, zero = .zero
+      )
+    }, list(.zero = zero))), initialize = eval(substitute(expression({
+      if (is.R()) assign("CQO.FastAlgorithm", TRUE, envir = VGAM::VGAMenv) else CQO.FastAlgorithm <<- TRUE
+      if (any(function.name == c("cqo", "cao")) && (length(.zero) ||
+        (is.logical(.parallel) && .parallel))) {
+        stop("cannot handle non-default arguments for cqo() and cao()")
+      }
+      temp5 <- w.y.check(
+        w = w, y = y, ncol.w.max = Inf, ncol.y.max = Inf,
+        out.wy = TRUE, colsyperw = 1, maximize = TRUE
+      )
+      w <- temp5$w
+      y <- temp5$y
+      M <- if (is.matrix(y)) ncol(y) else 1
+      dy <- dimnames(y)
+      predictors.names <- if (!is.null(dy[[2]])) {
+        dy[[2]]
+      } else {
+        param.names(
+          "Y",
+          M
+        )
+      }
+      if (!length(etastart)) etastart <- 0 * y
+    }), list(.parallel = parallel, .zero = zero))), linkinv = function(eta,
+                                                                           extra = NULL) eta, last = eval(substitute(expression({
+      dy <- dimnames(y)
+      if (!is.null(dy[[2]])) dimnames(fit$fitted.values) <- dy
+      dpar <- .dispersion
+      if (!dpar) {
+        wz <- VGAM.weights.function(w = w, M = M, n = n)
+        temp5 <- ResSS.vgam(y - mu, wz = wz, M = M)
+        dpar <- temp5 / (length(y) - (if (is.numeric(ncol(X.vlm.save))) ncol(X.vlm.save) else 0))
+      }
+      misc$dispersion <- dpar
+      misc$default.dispersion <- 0
+      misc$estimated.dispersion <- .estimated.dispersion
+      misc$link <- rep_len("identitylink", M)
+      names(misc$link) <- predictors.names
+      misc$earg <- vector("list", M)
+      for (ilocal in 1:M) misc$earg[[ilocal]] <- list()
+      names(misc$link) <- predictors.names
+      if (is.R()) {
+        if (exists("CQO.FastAlgorithm", envir = VGAM::VGAMenv)) {
+          rm("CQO.FastAlgorithm",
+            envir = VGAM::VGAMenv
+          )
+        }
+      } else {
+        while (exists("CQO.FastAlgorithm")) remove("CQO.FastAlgorithm")
+      }
+      misc$expected <- TRUE
+      misc$multipleResponses <- TRUE
+    }), list(.dispersion = dispersion, .estimated.dispersion = estimated.dispersion))),
+    loglikelihood = function(mu, y, w, residuals = FALSE,
+                                 eta, extra = NULL, summation = TRUE) {
+      M <- if (is.matrix(y)) {
+        ncol(y)
+      } else {
+        1
+      }
+      n <- if (is.matrix(y)) {
+        nrow(y)
+      } else {
+        length(y)
+      }
+      wz <- VGAM.weights.function(w = w, M = M, n = n)
+      if (residuals) {
+        stop("loglikelihood residuals not implemented yet")
+      }
+      else {
+        temp1 <- ResSS.vgam(y - mu, wz = wz, M = M)
+        ll.elts <- if (M == 1 || ncol(wz) == M) {
+          -0.5 * temp1 + 0.5 * (log(wz)) - n * (M / 2) *
+            log(2 * pi)
+        }
+        else {
+          if (all(wz[1, ] == apply(wz, 2, min)) && all(wz[1, ] == apply(wz, 2, max))) {
+            onewz <- m2a(wz[1, , drop = FALSE], M = M)
+            onewz <- onewz[, , 1]
+            logdet <- determinant(onewz)$modulus
+            logretval <- -0.5 * temp1 + 0.5 * n * logdet -
+              n * (M / 2) * log(2 * pi)
+            distval <- stop("variable 'distval' not computed yet")
+            logretval <- -(ncol(onewz) * log(2 * pi) +
+              logdet + distval) / 2
+            logretval
+          }
+          else {
+            logretval <- -0.5 * temp1 - n * (M / 2) * log(2 *
+              pi)
+            for (ii in 1:n) {
+              onewz <- m2a(wz[ii, , drop = FALSE], M = M)
+              onewz <- onewz[, , 1]
+              logdet <- determinant(onewz)$modulus
+              logretval <- logretval + 0.5 * logdet
+            }
+            logretval
+          }
+        }
+        if (summation) {
+          sum(ll.elts)
+        }
+        else {
+          ll.elts
+        }
+      }
+    }, linkfun = function(mu, extra = NULL) mu, vfamily = "gaussianff",
+    validparams = eval(substitute(function(eta, y, extra = NULL) {
+      okay1 <- all(is.finite(eta))
+      okay1
+    }, list(.zero = zero))), deriv = expression({
+      wz <- VGAM.weights.function(w = w, M = M, n = n)
+      mux22(cc = t(wz), xmat = y - mu, M = M, as.matrix = TRUE)
+    }), weight = expression({
+      wz
+    })
+  )
+}
+
 ############################
 ### Public methods below ###
 ############################
@@ -365,7 +541,8 @@ embed_cells <- function(obj, data_model = 'negbinomial_sz', ...) {
   } else if(data_model == 'tobit') {
     expression_fam_fn = VGAM::tobit()
   } else if(data_model == 'gaussianff') {
-    expression_fam_fn = VGAM::gaussianff()
+    #expression_fam_fn = VGAM::gaussianff()
+    expression_fam_fn = gaussianff_local()
   } else {
     stop("Error: Invalid data_model specified")
   }
