@@ -4,7 +4,7 @@
 \alias{identify_centroids}
 \title{Identify cluster centroids (cell names)}
 \usage{
-identify_centroids(ref_clusters, data_ordered)
+identify_centroids(ref_clusters)
 }
 \arguments{
 \item{ref_clusters}{list containing each cluster of interest (each list element is a matrix of dimension num_cells x num_markers)}
@@ -20,6 +20,6 @@ Private method (not exported in namespace)
 }
 \examples{
 \dontrun{
-centroid_names <- identify_centroids(ref_clusters, data_ordered)
+centroid_names <- identify_centroids(ref_clusters)
 }
 }

@@ -7,9 +7,11 @@
 draw_colnames_45(coln, gaps, ...)
 }
 \arguments{
-\item{coln}{column names}
+\item{coln}{Column names}
 
-\item{gaps}{spacing of labels}
+\item{gaps}{Spacing of labels}
+
+\item{...}{Additional parameters to be passed to \code{gpar}}
 }
 \value{
 Formatted marker labels in heatmap

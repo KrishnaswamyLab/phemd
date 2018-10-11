@@ -20,6 +20,6 @@ Private method (not exported in namespace)
 }
 \examples{
 \dontrun{
-num_cells_in_each_sample <- get_sample_sizes(my_data_list)
+sample_sizes <- get_sample_sizes(all_expn_data)
 }
 }

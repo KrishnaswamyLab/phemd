@@ -28,15 +28,18 @@ Plots relative frequency ("weights") of cell subtypes ("bins" or "signatures") i
 \code{group_samples} must be called before calling this function. Saves plots in directory called "individual_inhibs"
 }
 \examples{
-\dontrun{
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
-cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
-cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-print_cluster_assignments(cluster_assignments, myobj, savedest)
-plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-}
+cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust', ncluster=4)
+print_cluster_assignments(cluster_assignments, my_phemdObj_final, '.')
+dm <- plot_grouped_samples_dmap(my_EMD_mat, cluster_assignments, '.', pt_sz=2, pt_label = my_phemdObj_final@snames)
+plot_sample_histograms(my_phemdObj_final, cluster_assignments, '.')
+
 }

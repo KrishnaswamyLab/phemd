@@ -26,12 +26,15 @@ Takes sample-sample distance matrix as input and returns group assignments for e
 By default, uses 'kgs' (Kelley-Gardner-Sutcliffe) method for determining optimal number of groups. Alternatively, can take user-specified number of groups). Requires 'cluster' and 'maptree' packages.
 }
 \examples{
-\dontrun{
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
-cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-}
+cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust', ncluster=4)
+
 }

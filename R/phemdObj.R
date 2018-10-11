@@ -20,10 +20,10 @@
 #' @rdname phemdObj
 #' @aliases phemdObj-class
 #' @exportClass phemdObj
-#' @import monocle Seurat
+#' @importClassesFrom Seurat seurat
 
-setClassUnion("CDSorNULL",members=c("CellDataSet", "NULL"))
-#setClass('CellDataSet')
+setClassUnion("CDSorNULL",members=c('CellDataSet', "NULL"))
+
 setClass("phemdObj",
          contains=c('CellDataSet', 'seurat'),
          slots=c(data = "list",

@@ -10,6 +10,8 @@ embed_cells(obj, data_model = "negbinomial_sz", ...)
 \item{obj}{'phemdObj' object containing aggregated data}
 
 \item{data_model}{One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}}
+
+\item{...}{Additional parameters to be passed to \code{reduceDimension} function}
 }
 \value{
 Same as input 'phemdObj' object with additional Monocle2 object in @monocle_obj slot
@@ -21,10 +23,8 @@ Takes as input an phemdObj with aggregated data and returns same phemdObj with M
 Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregate_samples} needs to be called before running this function.
 }
 \examples{
-\dontrun{
-my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
-my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
-my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
-my_phemdObj_lg <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
-}
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_lg <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 }

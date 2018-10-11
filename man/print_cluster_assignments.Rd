@@ -9,9 +9,9 @@ print_cluster_assignments(cluster_assignments, obj, dest)
 \arguments{
 \item{cluster_assignments}{Vector containing group assignments for each sample}
 
-\item{dest}{Path to existing directory where output should be saved}
+\item{obj}{phemdObj object containing sample names in @snames slot}
 
-\item{myobj}{phemdObj object containing sample names in @snames slot}
+\item{dest}{Path to existing directory where output should be saved}
 }
 \value{
 None
@@ -23,13 +23,16 @@ Takes vector of cluster assignments and phemdObj containing sample names and wri
 Order of samples in obj@snames is assumed to be the same as the order of group assignments in cluster_assignments
 }
 \examples{
-\dontrun{
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
-cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-print_cluster_assignments(cluster_assignments, myobj, savedest)
-}
+cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust', ncluster=4)
+print_cluster_assignments(cluster_assignments, my_phemdObj_final, '.')
+
 }

@@ -13,6 +13,8 @@ retrieve_refclusters(obj, cell_model = "monocle2",
 \item{cell_model}{String representing data model for cell state space (Seurat or Monocle 2)}
 
 \item{expn_type}{String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)}
+
+\item{ndim}{Number of dimensions (e.g. CCA) to use (only relevant for Seurat data models)}
 }
 \value{
 List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
@@ -27,4 +29,5 @@ Private method (not exported in namespace)
 \dontrun{
 cluster_expression_data <- retrieve_refclusters(my_phemdObj)
 }
+
 }

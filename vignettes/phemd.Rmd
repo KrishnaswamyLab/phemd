@@ -6,7 +6,8 @@ output: html_document
 
 vignette: >
     %\VignetteEngine{knitr::rmarkdown}
-    %\usepackage[UTF-8]{inputenc}
+    %\VignetteIndexEntry{PhEMD vignette}
+    \usepackage[UTF-8]{inputenc}
 ---
 
 ```{r setup, include=FALSE}

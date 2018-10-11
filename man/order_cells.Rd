@@ -8,6 +8,8 @@ order_cells(obj, ...)
 }
 \arguments{
 \item{obj}{'phemdObj' object containing initial Monocle 2 object}
+
+\item{...}{Additional parameters to be passed into \code{orderCells} function}
 }
 \value{
 Same as input 'phemdObj' object with updated Monocle2 object in @monocle_obj slot containing cell state and pseudotime assignments
@@ -19,11 +21,10 @@ Takes as input an phemdObj with Monocle2 object and returns same phemdObj with M
 Wrapper function for \code{orderCells} in Monocle 2 package. \code{embed_cells} needs to be called before calling this function.
 }
 \examples{
-\dontrun{
-my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
-my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
-my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
-}
 }

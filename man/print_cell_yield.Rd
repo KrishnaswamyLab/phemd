@@ -4,12 +4,14 @@
 \alias{print_cell_yield}
 \title{Prints cell yield of each sample as a table}
 \usage{
-print_cell_yield(myobj, dest)
+print_cell_yield(myobj, dest, cluster_assignments = NULL)
 }
 \arguments{
 \item{myobj}{phemdObj object containing expression data for each sample in 'data' slot}
 
 \item{dest}{Path to existing directory where output should be saved}
+
+\item{cluster_assignments}{Vector of cluster assignments to be included as additional column in output table (optional)}
 }
 \value{
 None
@@ -18,16 +20,16 @@ None
 Prints cell yield (number of viable cells) of each single-cell sample in decreasing order
 }
 \examples{
-\dontrun{
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
-cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
-cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-print_cluster_assignments(cluster_assignments, myobj, savedest)
-plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-print_cell_yield(myobj, savedest, cluster_assignments)
-}
+cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust', ncluster=4)
+print_cell_yield(my_phemdObj_final, '.', cluster_assignments)
+
 }

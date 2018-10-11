@@ -17,6 +17,10 @@ plot_cell_yield(myobj, dest, labels = NULL, cmap = NULL,
 \item{cmap}{Vector containing colors by which histogram bars should be colored (optional)}
 
 \item{font_sz}{Scaling factor for font size of sample names in barplot}
+
+\item{w}{Width of plot in inches}
+
+\item{h}{Height of plot in inches}
 }
 \value{
 None
@@ -25,16 +29,16 @@ None
 Plots cell yield (number of viable cells) of each single-cell sample in decreasing order as horizontal bar plot
 }
 \examples{
-\dontrun{
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
-cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
 my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 my_EMD_mat <- compare_samples(my_phemdObj_final)
-cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust')
-print_cluster_assignments(cluster_assignments, myobj, savedest)
-plot_sample_histograms(my_phemdObj_final, cluster_assignments, savedest, cmap)
-plot_cell_yield(myobj, savedest, cluster_assignments, font_sz = 0.8)
-}
+cluster_assignments <- group_samples(my_EMD_mat, distfun = 'hclust', ncluster=4)
+plot_cell_yield(my_phemdObj_final, '.', cluster_assignments, font_sz = 0.8)
+
 }

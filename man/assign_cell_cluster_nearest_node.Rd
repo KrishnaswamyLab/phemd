@@ -5,7 +5,7 @@
 \title{Assign cells to a reference cell subtype}
 \usage{
 assign_cell_cluster_nearest_node(cur_cells, ref_cells, ref_cell_labels,
-  data_model = "monocle")
+  data_model = "monocle2")
 }
 \arguments{
 \item{cur_cells}{Matrix of cells to be assigned to clusters (Dim: \var{num_cells} x \var{num_markers})}
@@ -13,6 +13,8 @@ assign_cell_cluster_nearest_node(cur_cells, ref_cells, ref_cell_labels,
 \item{ref_cells}{Matrix of cells used to build reference Monocle 2 tree (Dim: \var{num_monocle_cells} x \var{num_markers})}
 
 \item{ref_cell_labels}{Vector of length \var{num_monocle_cells} containing Monocle 2 cell branch assignments}
+
+\item{data_model}{Either "monocle2" or "seurat" depending on method used to model cell state space}
 }
 \value{
 Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}
@@ -25,6 +27,6 @@ Private method (not exported in namespace). Uses RANN package for fast knn searc
 }
 \examples{
 \dontrun{
-cur_cells_cluster_labels <- assign_cell_cluster_nearest_node(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels)
+cur_cells_cluster_labels <- assign_cell_cluster_nearest_node(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels, data_model='monocle2')
 }
 }

@@ -15,6 +15,14 @@ plot_embeddings(obj, path, cell_model = "monocle2", cmap = NULL,
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
 \item{cmap}{User-specified colormap to use to color cell state embedding (optional)}
+
+\item{w}{Width of plot in inches}
+
+\item{h}{Height of plot in inches}
+
+\item{pt_sz}{Scalar factor for point size}
+
+\item{ndims}{Number of dimensions to use for dimensionality reduction in case it hasn't been performed yet (only relevant when using Seurat data as input)}
 }
 \value{
 Colormap (vector of colors) used to color Monocle2 cell state embedding
@@ -26,12 +34,10 @@ Takes as input an phemdObj with Monocle2 object (already embedded and ordered) a
 \code{embed_cells} and \code{order_cells} need to be called before calling this function. Required additional package: 'RColorBrewer'
 }
 \examples{
-\dontrun{
-my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
-my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=10000)
-my_phemdObj_lg <- select_features(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS'))
-my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02)
+my_phemdObj <- create_dataobj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10)
+my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_monocle <- embed_cells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- order_cells(my_phemdObj_monocle)
-cmap <- plot_embeddings(my_phemdObj_monocle, savedest)
-}
+cmap <- plot_embeddings(my_phemdObj_monocle, path='.')
 }
