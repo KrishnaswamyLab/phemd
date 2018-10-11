@@ -391,7 +391,7 @@ create_dataobj <- function(data, markers, snames, datatype='list', valtype='coun
 #' my_phemdObj <- attach_seuratobj(my_phemdObj, my_seuratObj)
 #' }
 attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
-  stopifnot(class(seurat_obj) == 'seurat')
+  stopifnot(is(seurat_obj,'seurat'))
   # ensure cluster names are 1-indexed
   if(min(as.numeric(as.character(seurat_obj@ident))) == 0) {
     label_names <- names(seurat_obj@ident)
@@ -418,7 +418,7 @@ attach_seuratobj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
 #' my_phemdObj_lg <- remove_tiny_samples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' 
 remove_tiny_samples <- function(obj, min_sz=20) {
-  stopifnot(class(obj) == 'phemdObj')
+  stopifnot(is(obj,'phemdObj'))
   stopifnot(mode(min_sz) == 'numeric')
   all_data <- obj@data
   all_snames <- obj@snames
@@ -450,7 +450,7 @@ remove_tiny_samples <- function(obj, min_sz=20) {
 #' my_phemdObj_lg <- aggregate_samples(my_phemdObj_lg, max_cells=1000)
 #' 
 aggregate_samples <- function(obj, max_cells=12000) {
-  stopifnot(class(obj) == 'phemdObj')
+  stopifnot(is(obj, 'phemdObj'))
   stopifnot(mode(max_cells) == 'numeric')
   set.seed(112) # for reproducibility
   all_data <- obj@data
@@ -964,7 +964,7 @@ draw_colnames_45 <- function(coln, gaps, ...) {
 #' my_phemdObj_final <- cluster_individual_samples(my_phemdObj_monocle)
 #' 
 cluster_individual_samples <- function(obj, verbose=FALSE, cell_model='monocle2') {
-  stopifnot(class(obj) == 'phemdObj')
+  stopifnot(is(obj,'phemdObj'))
   all_data <- obj@data
   if(cell_model == 'monocle2') {
     monocle_obj <- obj@monocle_obj
@@ -1100,7 +1100,7 @@ cluster_individual_samples <- function(obj, verbose=FALSE, cell_model='monocle2'
 #' my_phemdObj_final <- generate_gdm(my_phemdObj_final)
 #' 
 generate_gdm <- function(obj, cell_model='monocle2') {
-  stopifnot(class(obj) == 'phemdObj')
+  stopifnot(is(obj,'phemdObj'))
 
   if(cell_model == 'monocle2') {
     monocle_obj <- obj@monocle_obj
@@ -1151,7 +1151,7 @@ generate_gdm <- function(obj, cell_model='monocle2') {
 #' my_EMD_mat <- compare_samples(my_phemdObj_final)
 #' 
 compare_samples <- function(obj) {
-  stopifnot(class(obj) == 'phemdObj')
+  stopifnot(is(obj,'phemdObj'))
   cluster_weights <- obj@data_cluster_weights
   emd_dists <- obj@emd_dist_mat
   # generate inhibitor distance matrix
