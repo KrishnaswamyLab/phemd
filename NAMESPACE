@@ -17,7 +17,7 @@ importFrom("grDevices", "colorRampPalette", "dev.off", "palette", "png", "rainbo
 importFrom("graphics", "barplot", "par", "text", "title")
 importFrom("stats", "as.dist", "cov", "cutree", "dist", "hclust", "mahalanobis")
 importFrom("utils", "assignInNamespace", "write.table")
-importFrom("methods", "new")
+importFrom("methods", "new", "is")
 
 exportClasses(phemdObj)
 export(create_dataobj)
