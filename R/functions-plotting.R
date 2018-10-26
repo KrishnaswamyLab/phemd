@@ -1,7 +1,7 @@
 #' @title Plots Monocle2 cell embedding plots
-#' @description Takes as input an phemdObj with Monocle2 object (already embedded and ordered) and plots cell embedding plots side by side. Optionally saves to specified folder
+#' @description Takes as input a Phemd object containing either a Monocle2 object or Seurat object (already embedded and ordered) and plots cell embedding plots side by side. Optionally saves to specified folder.
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional packages: 'RColorBrewer', 'cowplot'
-#' @param obj 'phemdObj' object containing Monocle 2 object
+#' @param obj 'Phemd' object containing Monocle 2 object
 #' @param path Path to destination folder (must already exist). Optional.
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param cmap User-specified colormap to use to color cell state embedding (optional)
@@ -157,10 +157,10 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
   return(cmap)
 }
 
-#' @title Save Monocle2 heatmap plot to folder
-#' @description Takes as input an phemdObj with Monocle2 object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
+#' @title Plot heatmap of cell subtypes
+#' @description Takes as input a Phemd object containing either a Monocle2 or Seurat object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional package: 'pheatmap'
-#' @param obj 'phemdObj' object containing Monocle 2 object
+#' @param obj 'Phemd' object containing Monocle 2 object
 #' @param path Path to destination folder (must already exist). Optional for Monocle use cases
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
 #' @param selected_genes Vector containing gene names to include in heatmap (optional)
@@ -168,12 +168,14 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
 #' @param h Height of plot in inches
 #' @return None
 #' @examples
+#' \dontrun{
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' plotHeatmaps(my_phemdObj_monocle, path=NULL)
+#' }
 plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5) {
   if(!is.null(path) && substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
   cell_model <- match.arg(cell_model, c('monocle2','seurat'))
@@ -460,10 +462,10 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, dest=NULL, p
   return(dm)
 }
 
-#' @title Saves cell subtype frequency histograms summarizing each group of samples
-#' @description Saves plots of relative frequency ("weights") of cell subtypes ("bins" or "signatures") summarizing each group of single-cell samples. Each summary histogram is computed by taking the bin-wise mean of all samples in the group
+#' @title Plots cell subtype frequency histograms summarizing each group of samples
+#' @description Visualizes plots of relative frequency ("weights") of cell subtypes ("bins" or "signatures") summarizing each group of single-cell samples. Each summary histogram is computed by taking the bin-wise mean of all samples in the group
 #' @details \code{groupSamples} must be called before calling this function. Saves plots in directory called "summary_inhibs"
-#' @param myobj phemdObj object containing cell subtype relative frequency in @@data_cluster_weights slot
+#' @param myobj Phemd object containing cell subtype relative frequency in @@data_cluster_weights slot
 #' @param cluster_assignments Vector containing group assignments for each sample in myobj
 #' @param dest Path to existing directory where output should be saved
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
@@ -559,7 +561,7 @@ plotSummaryHistograms <- function(myobj, cluster_assignments, dest=NULL, cell_mo
 
 #' @title Plot cell yield of each sample as bar plot
 #' @description Plots cell yield (number of viable cells) of each single-cell sample in decreasing order as horizontal bar plot
-#' @param myobj phemdObj object containing expression data for each sample in 'data' slot
+#' @param myobj Phmed object containing expression data for each sample in 'data' slot
 #' @param dest Path to existing directory where output should be saved (optional).
 #' @param labels Vector containing group labels for samples (optional). If not provided, bars will be of uniform color (blue)
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)

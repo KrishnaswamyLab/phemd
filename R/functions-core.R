@@ -21,9 +21,9 @@ getSampleSizes <- function(data_list) {
 }
 
 #' @title Retrieve reference cell clusters
-#' @description Takes initial phemdObj struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
+#' @description Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
 #' @details Private method (not exported in namespace)
-#' @param obj phemdObj struct containing Monocle2 object and underlying expression data
+#' @param obj Phemd struct containing Monocle2 object and underlying expression data
 #' @param cell_model String representing data model for cell state space (Seurat or Monocle 2)
 #' @param expn_type String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)
 #' @param ndim Number of dimensions (e.g. CCA) to use (only relevant for Seurat data models)
@@ -344,15 +344,15 @@ gaussianffLocal <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
 ### Public methods below ###
 ############################
 
-#' @title Create 'phemdObj' object
-#' @description Wrapper function to create 'phemdObj' object containing raw expression data and metadata
+#' @title Create 'Phemd' object
+#' @description Wrapper function to create 'Phemd' object containing raw expression data and metadata
 #' @details Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary).
 #' @param data List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}. Alternately a SingleCellExperiment object.
 #' @param markers Vector containing marker names (i.e. column names of \code{all_data})
 #' @param snames Vector containing sample names (i.e. names of samples contained in \code{all_data})
 #' @param datatype Either "list" or "sce" (SingleCellExperiment with genes x cells)
 #' @param valtype Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"
-#' @return 'phemdObj' object containing raw multi-sample expression data and associated metadata
+#' @return 'Phemd' object containing raw multi-sample expression data and associated metadata
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' 
@@ -389,12 +389,12 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
 }
 
 
-#' @title Attach 'seurat' object to 'phemdObj' object
-#' @description Allows user to attach batch-normalized reference cell data from Seurat into 'phemdObj' object containing raw expression data and metadata
-#' @param phemd_obj phemdObj struct initialized using createDataObj
+#' @title Attach 'seurat' object to 'Phemd' object
+#' @description Allows user to attach batch-normalized reference cell data from Seurat into 'Phemd' object containing raw expression data and metadata
+#' @param phemd_obj Phemd object initialized using createDataObj
 #' @param seurat_obj S4 'seurat' object containing batch-normalized reference cell data
 #' @param batch.colname Name of column in Seurat object that denotes batch ID
-#' @return 'phemdObj' object containing with attached Seurat object
+#' @return 'Phemd' object containing with attached Seurat object
 #' @examples
 #' \dontrun{
 #' my_phemdObj <- bindSeuratObj(my_phemdObj, my_seuratObj)
@@ -417,11 +417,11 @@ bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
 }
 
 #' @title Remove samples with too few cells
-#' @description Removes samples from phemdObj that have fewer cells than \code{min_sz}
+#' @description Removes samples from Phemd that have fewer cells than \code{min_sz}
 #' @details Note: If used, this function must be called before (and not after) the \code{aggregateSamples} function is called
-#' @param obj 'phemdObj' object containing raw expression data and associated metadata
+#' @param obj 'Phemd' object containing raw expression data and associated metadata
 #' @param min_sz Minimum number of cells in each sample to be retained
-#' @return 'phemdObj' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
+#' @return 'Phemd' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10) #removes samples with fewer than 10 cells
@@ -449,11 +449,11 @@ removeTinySamples <- function(obj, min_sz=20) {
 }
 
 #' @title Aggregate expression data from all samples
-#' @description Takes initial phemdObj and returns phemdObj with additional data frame in slot @@data_aggregate containing cells aggregated from all samples (to be used for further analyses e.g. Monocle 2 trajectory building / pseudotime mapping / cell clustering)
+#' @description Takes initial Phemd object and returns object with additional data frame in slot @@data_aggregate containing cells aggregated from all samples (to be used for further analyses e.g. Monocle 2 trajectory building / pseudotime mapping / cell clustering)
 #' @details Subsamples cells as necessary based on \code{max_cells}. If subsampling is performed, an equal number of cells are subsampled from each sample
-#' @param obj 'phemdObj' object containing raw expression data and associated metadata
+#' @param obj 'Phemd' object containing raw expression data and associated metadata
 #' @param max_cells Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run
-#' @return Same as input 'phemdObj' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
+#' @return Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
@@ -497,11 +497,11 @@ aggregateSamples <- function(obj, max_cells=12000) {
 }
 
 #' @title Perform feature selection on aggregated data
-#' @description Takes as input an phemdObj with aggregated data and returns same phemdObj after performing feature selection on aggregated data
+#' @description Takes as input a Phemd object with aggregated data and returns updated object after performing feature selection on aggregated data
 #' @details \code{aggregateSamples} needs to be called before running this function
-#' @param obj 'phemdObj' object containing aggregated data
+#' @param obj 'Phemd' object containing aggregated data
 #' @param selected_genes Vector containing names of genes to use for downstream analyses
-#' @return Same as input 'phemdObj' object after performing feature-selection based dimensionality reduction on aggregated expression data
+#' @return Same as input 'Phemd' object after performing feature-selection based dimensionality reduction on aggregated expression data
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
@@ -527,12 +527,12 @@ selectFeatures <- function(obj, selected_genes) {
 }
 
 #' @title Generate Monocle2 embedding
-#' @description Takes as input an phemdObj with aggregated data and returns same phemdObj with Monocle2 object in @@monocle_obj slot
+#' @description Takes as input a Phemd object with aggregated data and returns updated object with Monocle2 object in @@monocle_obj slot
 #' @details Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregateSamples} needs to be called before running this function.
-#' @param obj 'phemdObj' object containing aggregated data
+#' @param obj 'Phemd' object containing aggregated data
 #' @param data_model One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'uninormal', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}
 #' @param ... Additional parameters to be passed to \code{reduceDimension} function
-#' @return Same as input 'phemdObj' object with additional Monocle2 object in @@monocle_obj slot
+#' @return Same as input 'Phemd' object with additional Monocle2 object in @@monocle_obj slot
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
@@ -601,11 +601,11 @@ embedCells <- function(obj, data_model = 'negbinomial_sz', ...) {
 }
 
 #' @title Compute Monocle2 cell state and pseudotime assignments
-#' @description Takes as input an phemdObj with Monocle2 object and returns same phemdObj with Monocle2 object containing cell state and pseudotime assignments
+#' @description Takes as input a Phemd object with Monocle2 object and returns updated object with Monocle2 object containing cell state and pseudotime assignments
 #' @details Wrapper function for \code{orderCells} in Monocle 2 package. \code{embedCells} needs to be called before calling this function.
-#' @param obj 'phemdObj' object containing initial Monocle 2 object
+#' @param obj 'Phemd' object containing initial Monocle 2 object
 #' @param ... Additional parameters to be passed into \code{orderCells} function
-#' @return Same as input 'phemdObj' object with updated Monocle2 object in @@monocle_obj slot containing cell state and pseudotime assignments
+#' @return Same as input 'Phemd' object with updated Monocle2 object in @@monocle_obj slot containing cell state and pseudotime assignments
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
@@ -627,12 +627,12 @@ orderCellsMonocle <- function(obj, ...) {
 }
 
 #' @title Computes cell subtype abundances for each sample
-#' @description Takes as input an phemdObj with all single-cell expression data of all single-cell samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns same phemdObj with cell subtype frequencies of each sample in @@data_cluster_weights slot
+#' @description Takes as input a Phemd object with all single-cell expression data of all single-cell samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns updated object with cell subtype frequencies of each sample in @@data_cluster_weights slot
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function.
-#' @param obj 'phemdObj' object containing single-cell expression data of all samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot
+#' @param obj 'Phemd' object containing single-cell expression data of all samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot
 #' @param verbose Boolean that determines whether progress (sequential processing of samples) should be printed. FALSE by default
 #' @param cell_model Either "monocle2" or "seurat" depending on method used to model cell state space
-#' @return phemdObj with cell subtype frequencies of each sample in @@data_cluster_weights slot
+#' @return 'Phemd' object with cell subtype frequencies of each sample in @@data_cluster_weights slot
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
@@ -772,11 +772,11 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 
 
 #' @title Computes ground distance matrix based on cell embedding
-#' @description Takes as input an phemdObj with Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns same phemdObj with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
+#' @description Takes as input a Phemd object with Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns updated object with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Requires 'igraph' package
-#' @param obj 'phemdObj' object containing Monocle2 object (already embedded and ordered) in @@monocle_obj slot
+#' @param obj 'Phemd' object containing Monocle2 object (already embedded and ordered) in @@monocle_obj slot
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
-#' @return phemdObj with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
+#' @return Phemd object with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
@@ -824,9 +824,9 @@ generateGDM <- function(obj, cell_model=c('monocle2', 'seurat')) {
 }
 
 #' @title Computes EMD distance matrix representing pairwise dissimilarity between samples
-#' @description Takes as input an phemdObj with cell subtype relative frequencies for each sample in @@data_cluster_weights slot and ground distance matrix (representing cell subtype pairwise dissimilarity) in @@emd_dist_mat slot. Returns distance matrix representing pairwise dissimilarity between samples
+#' @description Takes as input a Phemd object with cell subtype relative frequencies for each sample in @@data_cluster_weights slot and ground distance matrix (representing cell subtype pairwise dissimilarity) in @@emd_dist_mat slot. Returns distance matrix representing pairwise dissimilarity between samples
 #' @details Requires 'transport' and 'pracma' packages
-#' @param obj 'phemdObj' object containing cell subtype relative frequencies for each sample in @@data_cluster_weights slot and ground distance matrix (representing cell subtype dissimilarity) in @@emd_dist_mat slot
+#' @param obj 'Phemd' object containing cell subtype relative frequencies for each sample in @@data_cluster_weights slot and ground distance matrix (representing cell subtype dissimilarity) in @@emd_dist_mat slot
 #' @return Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 #' @examples
 #'
