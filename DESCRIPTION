@@ -1,15 +1,15 @@
 Package: phemd
 Type: Package
 Title: Phenotypic EMD for comparison of single-cell samples
-Version: 0.99.12
+Version: 0.99.13
 Author: William S Chen
 Maintainer: William S Chen <wil.yum.chen@gmail.com>
 Description: Package for comparing and generating a low-dimensional embedding of multiple single-cell samples.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5), monocle
-Imports: RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, Seurat, RANN, ggplot2, maptree, pheatmap, scatterplot3d, VGAM, methods, grDevices, graphics, stats, utils
+Depends: R (>= 3.5.0), monocle
+Imports: SingleCellExperiment, RColorBrewer, igraph, transport, pracma, cluster, Rtsne, destiny, Seurat, RANN, ggplot2, maptree, pheatmap, scatterplot3d, VGAM, methods, grDevices, graphics, stats, utils, cowplot, S4Vectors
 Suggests: knitr
 VignetteBuilder: knitr
 biocViews: Clustering, ComparativeGenomics, Proteomics, Transcriptomics, Sequencing, DimensionReduction, SingleCell, DataRepresentation, Visualization, MultipleComparison
