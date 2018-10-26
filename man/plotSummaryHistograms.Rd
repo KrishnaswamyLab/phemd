@@ -2,14 +2,14 @@
 % Please edit documentation in R/functions-plotting.R
 \name{plotSummaryHistograms}
 \alias{plotSummaryHistograms}
-\title{Saves cell subtype frequency histograms summarizing each group of samples}
+\title{Plots cell subtype frequency histograms summarizing each group of samples}
 \usage{
 plotSummaryHistograms(myobj, cluster_assignments, dest = NULL,
   cell_model = c("monocle2", "seurat"), cmap = NULL,
   overwrite = FALSE, ncol.plot = 4, ax.lab.sz = 2.5, title.sz = 3)
 }
 \arguments{
-\item{myobj}{phemdObj object containing cell subtype relative frequency in @data_cluster_weights slot}
+\item{myobj}{Phemd object containing cell subtype relative frequency in @data_cluster_weights slot}
 
 \item{cluster_assignments}{Vector containing group assignments for each sample in myobj}
 
@@ -31,7 +31,7 @@ plotSummaryHistograms(myobj, cluster_assignments, dest = NULL,
 None
 }
 \description{
-Saves plots of relative frequency ("weights") of cell subtypes ("bins" or "signatures") summarizing each group of single-cell samples. Each summary histogram is computed by taking the bin-wise mean of all samples in the group
+Visualizes plots of relative frequency ("weights") of cell subtypes ("bins" or "signatures") summarizing each group of single-cell samples. Each summary histogram is computed by taking the bin-wise mean of all samples in the group
 }
 \details{
 \code{groupSamples} must be called before calling this function. Saves plots in directory called "summary_inhibs"

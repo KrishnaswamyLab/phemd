@@ -7,15 +7,15 @@
 orderCellsMonocle(obj, ...)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing initial Monocle 2 object}
+\item{obj}{'Phemd' object containing initial Monocle 2 object}
 
 \item{...}{Additional parameters to be passed into \code{orderCells} function}
 }
 \value{
-Same as input 'phemdObj' object with updated Monocle2 object in @monocle_obj slot containing cell state and pseudotime assignments
+Same as input 'Phemd' object with updated Monocle2 object in @monocle_obj slot containing cell state and pseudotime assignments
 }
 \description{
-Takes as input an phemdObj with Monocle2 object and returns same phemdObj with Monocle2 object containing cell state and pseudotime assignments
+Takes as input a Phemd object with Monocle2 object and returns updated object with Monocle2 object containing cell state and pseudotime assignments
 }
 \details{
 Wrapper function for \code{orderCells} in Monocle 2 package. \code{embedCells} needs to be called before calling this function.

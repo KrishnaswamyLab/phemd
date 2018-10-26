@@ -8,7 +8,7 @@ retrieveRefClusters(obj, cell_model = c("monocle2", "seurat"),
   expn_type = "aligned", ndim = 10)
 }
 \arguments{
-\item{obj}{phemdObj struct containing Monocle2 object and underlying expression data}
+\item{obj}{Phemd struct containing Monocle2 object and underlying expression data}
 
 \item{cell_model}{String representing data model for cell state space (Seurat or Monocle 2)}
 
@@ -20,7 +20,7 @@ retrieveRefClusters(obj, cell_model = c("monocle2", "seurat"),
 List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
 }
 \description{
-Takes initial phemdObj struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
+Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
 }
 \details{
 Private method (not exported in namespace)

@@ -7,17 +7,17 @@
 embedCells(obj, data_model = "negbinomial_sz", ...)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing aggregated data}
+\item{obj}{'Phemd' object containing aggregated data}
 
 \item{data_model}{One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'uninormal', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}}
 
 \item{...}{Additional parameters to be passed to \code{reduceDimension} function}
 }
 \value{
-Same as input 'phemdObj' object with additional Monocle2 object in @monocle_obj slot
+Same as input 'Phemd' object with additional Monocle2 object in @monocle_obj slot
 }
 \description{
-Takes as input an phemdObj with aggregated data and returns same phemdObj with Monocle2 object in @monocle_obj slot
+Takes as input a Phemd object with aggregated data and returns updated object with Monocle2 object in @monocle_obj slot
 }
 \details{
 Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregateSamples} needs to be called before running this function.

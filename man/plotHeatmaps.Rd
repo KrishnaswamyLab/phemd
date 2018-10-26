@@ -2,13 +2,13 @@
 % Please edit documentation in R/functions-plotting.R
 \name{plotHeatmaps}
 \alias{plotHeatmaps}
-\title{Save Monocle2 heatmap plot to folder}
+\title{Plot heatmap of cell subtypes}
 \usage{
 plotHeatmaps(obj, path = NULL, cell_model = c("monocle2", "seurat"),
   selected_genes = NULL, w = 8, h = 5)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing Monocle 2 object}
+\item{obj}{'Phemd' object containing Monocle 2 object}
 
 \item{path}{Path to destination folder (must already exist). Optional for Monocle use cases}
 
@@ -24,16 +24,18 @@ plotHeatmaps(obj, path = NULL, cell_model = c("monocle2", "seurat"),
 None
 }
 \description{
-Takes as input an phemdObj with Monocle2 object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
+Takes as input a Phemd object containing either a Monocle2 or Seurat object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
 }
 \details{
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional package: 'pheatmap'
 }
 \examples{
+\dontrun{
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 plotHeatmaps(my_phemdObj_monocle, path=NULL)
+}
 }

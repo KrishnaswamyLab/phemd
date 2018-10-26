@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions-core.R
 \name{createDataObj}
 \alias{createDataObj}
-\title{Create 'phemdObj' object}
+\title{Create 'Phemd' object}
 \usage{
 createDataObj(data, markers, snames, datatype = "list",
   valtype = "counts")
@@ -19,10 +19,10 @@ createDataObj(data, markers, snames, datatype = "list",
 \item{valtype}{Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"}
 }
 \value{
-'phemdObj' object containing raw multi-sample expression data and associated metadata
+'Phemd' object containing raw multi-sample expression data and associated metadata
 }
 \description{
-Wrapper function to create 'phemdObj' object containing raw expression data and metadata
+Wrapper function to create 'Phemd' object containing raw expression data and metadata
 }
 \details{
 Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary).

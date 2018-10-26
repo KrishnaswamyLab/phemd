@@ -2,22 +2,22 @@
 % Please edit documentation in R/functions-core.R
 \name{bindSeuratObj}
 \alias{bindSeuratObj}
-\title{Attach 'seurat' object to 'phemdObj' object}
+\title{Attach 'seurat' object to 'Phemd' object}
 \usage{
 bindSeuratObj(phemd_obj, seurat_obj, batch.colname = "plt")
 }
 \arguments{
-\item{phemd_obj}{phemdObj struct initialized using createDataObj}
+\item{phemd_obj}{Phemd object initialized using createDataObj}
 
 \item{seurat_obj}{S4 'seurat' object containing batch-normalized reference cell data}
 
 \item{batch.colname}{Name of column in Seurat object that denotes batch ID}
 }
 \value{
-'phemdObj' object containing with attached Seurat object
+'Phemd' object containing with attached Seurat object
 }
 \description{
-Allows user to attach batch-normalized reference cell data from Seurat into 'phemdObj' object containing raw expression data and metadata
+Allows user to attach batch-normalized reference cell data from Seurat into 'Phemd' object containing raw expression data and metadata
 }
 \examples{
 \dontrun{

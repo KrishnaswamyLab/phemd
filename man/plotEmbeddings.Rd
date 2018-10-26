@@ -8,7 +8,7 @@ plotEmbeddings(obj, path = NULL, cell_model = c("monocle2", "seurat"),
   cmap = NULL, w = 4, h = 5, pt_sz = 1, ndims = NULL)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing Monocle 2 object}
+\item{obj}{'Phemd' object containing Monocle 2 object}
 
 \item{path}{Path to destination folder (must already exist). Optional.}
 
@@ -28,7 +28,7 @@ plotEmbeddings(obj, path = NULL, cell_model = c("monocle2", "seurat"),
 Colormap (vector of colors) used to color Monocle2 cell state embedding
 }
 \description{
-Takes as input an phemdObj with Monocle2 object (already embedded and ordered) and plots cell embedding plots side by side. Optionally saves to specified folder
+Takes as input a Phemd object containing either a Monocle2 object or Seurat object (already embedded and ordered) and plots cell embedding plots side by side. Optionally saves to specified folder.
 }
 \details{
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional packages: 'RColorBrewer', 'cowplot'

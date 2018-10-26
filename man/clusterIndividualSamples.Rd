@@ -8,17 +8,17 @@ clusterIndividualSamples(obj, verbose = FALSE,
   cell_model = c("monocle2", "seurat"))
 }
 \arguments{
-\item{obj}{'phemdObj' object containing single-cell expression data of all samples in @data slot and Monocle2 object (already embedded and ordered) in @monocle_obj slot}
+\item{obj}{'Phemd' object containing single-cell expression data of all samples in @data slot and Monocle2 object (already embedded and ordered) in @monocle_obj slot}
 
 \item{verbose}{Boolean that determines whether progress (sequential processing of samples) should be printed. FALSE by default}
 
 \item{cell_model}{Either "monocle2" or "seurat" depending on method used to model cell state space}
 }
 \value{
-phemdObj with cell subtype frequencies of each sample in @data_cluster_weights slot
+'Phemd' object with cell subtype frequencies of each sample in @data_cluster_weights slot
 }
 \description{
-Takes as input an phemdObj with all single-cell expression data of all single-cell samples in @data slot and Monocle2 object (already embedded and ordered) in @monocle_obj slot. Returns same phemdObj with cell subtype frequencies of each sample in @data_cluster_weights slot
+Takes as input a Phemd object with all single-cell expression data of all single-cell samples in @data slot and Monocle2 object (already embedded and ordered) in @monocle_obj slot. Returns updated object with cell subtype frequencies of each sample in @data_cluster_weights slot
 }
 \details{
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function.

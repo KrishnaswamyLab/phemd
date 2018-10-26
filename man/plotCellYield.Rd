@@ -8,7 +8,7 @@ plotCellYield(myobj, dest = NULL, labels = NULL, cmap = NULL,
   font_sz = 0.6, w = 8, h = 9.5)
 }
 \arguments{
-\item{myobj}{phemdObj object containing expression data for each sample in 'data' slot}
+\item{myobj}{Phmed object containing expression data for each sample in 'data' slot}
 
 \item{dest}{Path to existing directory where output should be saved (optional).}
 

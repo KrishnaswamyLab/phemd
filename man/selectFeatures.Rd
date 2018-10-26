@@ -7,15 +7,15 @@
 selectFeatures(obj, selected_genes)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing aggregated data}
+\item{obj}{'Phemd' object containing aggregated data}
 
 \item{selected_genes}{Vector containing names of genes to use for downstream analyses}
 }
 \value{
-Same as input 'phemdObj' object after performing feature-selection based dimensionality reduction on aggregated expression data
+Same as input 'Phemd' object after performing feature-selection based dimensionality reduction on aggregated expression data
 }
 \description{
-Takes as input an phemdObj with aggregated data and returns same phemdObj after performing feature selection on aggregated data
+Takes as input a Phemd object with aggregated data and returns updated object after performing feature selection on aggregated data
 }
 \details{
 \code{aggregateSamples} needs to be called before running this function

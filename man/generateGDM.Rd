@@ -7,15 +7,15 @@
 generateGDM(obj, cell_model = c("monocle2", "seurat"))
 }
 \arguments{
-\item{obj}{'phemdObj' object containing Monocle2 object (already embedded and ordered) in @monocle_obj slot}
+\item{obj}{'Phemd' object containing Monocle2 object (already embedded and ordered) in @monocle_obj slot}
 
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 }
 \value{
-phemdObj with ground distance matrix (to be used in EMD computation) in @data_cluster_weights slot
+Phemd object with ground distance matrix (to be used in EMD computation) in @data_cluster_weights slot
 }
 \description{
-Takes as input an phemdObj with Monocle2 object (already embedded and ordered) in @monocle_obj slot. Returns same phemdObj with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
+Takes as input a Phemd object with Monocle2 object (already embedded and ordered) in @monocle_obj slot. Returns updated object with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
 }
 \details{
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Requires 'igraph' package

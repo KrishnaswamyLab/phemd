@@ -7,13 +7,13 @@
 compareSamples(obj)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing cell subtype relative frequencies for each sample in @data_cluster_weights slot and ground distance matrix (representing cell subtype dissimilarity) in @emd_dist_mat slot}
+\item{obj}{'Phemd' object containing cell subtype relative frequencies for each sample in @data_cluster_weights slot and ground distance matrix (representing cell subtype dissimilarity) in @emd_dist_mat slot}
 }
 \value{
 Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 }
 \description{
-Takes as input an phemdObj with cell subtype relative frequencies for each sample in @data_cluster_weights slot and ground distance matrix (representing cell subtype pairwise dissimilarity) in @emd_dist_mat slot. Returns distance matrix representing pairwise dissimilarity between samples
+Takes as input a Phemd object with cell subtype relative frequencies for each sample in @data_cluster_weights slot and ground distance matrix (representing cell subtype pairwise dissimilarity) in @emd_dist_mat slot. Returns distance matrix representing pairwise dissimilarity between samples
 }
 \details{
 Requires 'transport' and 'pracma' packages

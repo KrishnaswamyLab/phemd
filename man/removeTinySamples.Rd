@@ -7,15 +7,15 @@
 removeTinySamples(obj, min_sz = 20)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing raw expression data and associated metadata}
+\item{obj}{'Phemd' object containing raw expression data and associated metadata}
 
 \item{min_sz}{Minimum number of cells in each sample to be retained}
 }
 \value{
-'phemdObj' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
+'Phemd' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
 }
 \description{
-Removes samples from phemdObj that have fewer cells than \code{min_sz}
+Removes samples from Phemd that have fewer cells than \code{min_sz}
 }
 \details{
 Note: If used, this function must be called before (and not after) the \code{aggregateSamples} function is called

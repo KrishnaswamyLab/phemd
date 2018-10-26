@@ -7,15 +7,15 @@
 aggregateSamples(obj, max_cells = 12000)
 }
 \arguments{
-\item{obj}{'phemdObj' object containing raw expression data and associated metadata}
+\item{obj}{'Phemd' object containing raw expression data and associated metadata}
 
 \item{max_cells}{Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run}
 }
 \value{
-Same as input 'phemdObj' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
+Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
 }
 \description{
-Takes initial phemdObj and returns phemdObj with additional data frame in slot @data_aggregate containing cells aggregated from all samples (to be used for further analyses e.g. Monocle 2 trajectory building / pseudotime mapping / cell clustering)
+Takes initial Phemd object and returns object with additional data frame in slot @data_aggregate containing cells aggregated from all samples (to be used for further analyses e.g. Monocle 2 trajectory building / pseudotime mapping / cell clustering)
 }
 \details{
 Subsamples cells as necessary based on \code{max_cells}. If subsampling is performed, an equal number of cells are subsampled from each sample
