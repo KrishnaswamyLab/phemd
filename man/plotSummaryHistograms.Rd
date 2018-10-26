@@ -36,19 +36,3 @@ Visualizes plots of relative frequency ("weights") of cell subtypes ("bins" or "
 \details{
 \code{groupSamples} must be called before calling this function. Saves plots in directory called "summary_inhibs"
 }
-\examples{
-
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
-my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
-my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
-my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
-my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
-my_phemdObj_final <- generateGDM(my_phemdObj_final)
-my_EMD_mat <- compareSamples(my_phemdObj_final)
-cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
-printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
-dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, '.', pt_sz=2, pt_label = sampleNames(my_phemdObj_final))
-plotSummaryHistograms(my_phemdObj_final, cluster_assignments)
-
-}

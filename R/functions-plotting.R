@@ -72,8 +72,8 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
       for(i in seq_len(max(state_labels))) {
         ref_clusters[[i]] <- t(assayData(monocle_obj[,state_labels == i])$exprs)
         idx_keep <- which(state_labels == i)
-        if(length(idx_keep) > 1) ref_cluster_centroids[i,] <- rowMeans(cell_embedding[,state_labels == i])
-        else if(length(idx_keep) == 1) ref_cluster_centroids[i,] <- cell_embedding[,state_labels == i]
+        if(length(idx_keep) > 1) ref_cluster_centroids[i,] <- rowMeans(cell_embedding[,idx_keep])
+        else if(length(idx_keep) == 1) ref_cluster_centroids[i,] <- cell_embedding[,idx_keep]
       }
       text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
       dev.off()
@@ -189,12 +189,14 @@ plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), sele
     ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
     selected_clusters <- seq_len(length(ref_clusters))
     myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
-    for(i in seq_len(length(selected_clusters))) {
-      cur_cluster_idx <- selected_clusters[i]
+    for(i in selected_clusters) {
       cur_cluster <- ref_clusters[[i]]
-      if(!is.null(cur_cluster)) {
-        if(nrow(cur_cluster) > 1) myheatmap[i,] <- colMeans(cur_cluster)
-        else if(nrow(cur_cluster) == 1) myheatmap[i,] <- cur_cluster
+      if(!is.null(cur_cluster)) { #at least 1 cell
+        if(nrow(cur_cluster) > 1) {
+          myheatmap[i,] <- colMeans(cur_cluster)
+        } else {
+          myheatmap[i,] <- cur_cluster #only 1 cell
+        }
       } 
     }
     
@@ -488,14 +490,14 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, dest=NULL, p
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, '.', pt_sz=2, pt_label = sampleNames(my_phemdObj_final))
-#' plotSummaryHistograms(my_phemdObj_final, cluster_assignments)
+#' plotSummaryHistograms(my_phemdObj_final, cluster_assignments, cell_model='monocle2)
 #' 
 plotSummaryHistograms <- function(myobj, cluster_assignments, dest=NULL, cell_model=c('monocle2','seurat'), cmap=NULL, overwrite=FALSE, ncol.plot=4, ax.lab.sz=2.5, title.sz=3) {
   if(!is.null(dest) && substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   if(!is.null(dest) && dir.exists(paste(dest, 'summary_inhibs', sep='')) && overwrite==FALSE) {
     stop('Directory "summary_inhibs" already exists in specified path. Set "overwrite" parameter to TRUE if you want to overwrite existing directory')
   }
-  match.arg(cell_model, c('monocle2','seurat'))
+  cell_model <- match.arg(cell_model, c('monocle2','seurat'))
   if(cell_model == 'monocle2') {
     monocle_obj <- monocleInfo(myobj)
     labels <- pData(phenoData(monocle_obj))
