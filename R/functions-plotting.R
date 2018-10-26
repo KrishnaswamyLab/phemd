@@ -31,7 +31,7 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
     state_labels <- as.numeric(labels$State)
     
     levels <- levels(factor(state_labels))
-    levels_renamed <- sapply(levels, function(x) paste("C-", x, sep=""))
+    levels_renamed <- vapply(levels, function(x) paste("C-", x, sep=""), "")
     
     if(is.null(cmap)) {
       getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
@@ -171,7 +171,6 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
-#' cmap <- plotEmbeddings(my_phemdObj_monocle, path='.')
 #' plotHeatmaps(my_phemdObj_monocle, path=NULL)
 plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5) {
   if(!is.null(path) && substr(path,nchar(path), nchar(path)) != '/') path <- paste(path, '/', sep='') #ensure path ends with a slash
@@ -192,7 +191,7 @@ plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), sele
       if(!is.null(cur_cluster)) myheatmap[i,] <- colMeans(cur_cluster)
     }
     
-    selected_clusters_renamed <- sapply(selected_clusters, function(x) paste("C-", x, sep=""))
+    selected_clusters_renamed <- vapply(selected_clusters, function(x) paste("C-", x, sep=""), "")
     
     rownames(myheatmap) <- selected_clusters_renamed
     colnames(myheatmap) <- selectMarkers(obj)
@@ -262,7 +261,7 @@ plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), sele
         if(length(cur_idx) == 1) myheatmap[i,] <- cur_cluster
       }
       
-      selected_clusters_renamed <- sapply(seq_len(max(state_labels)), function(x) paste("C-", x, sep=""))
+      selected_clusters_renamed <- vapply(seq_len(max(state_labels)), function(x) paste("C-", x, sep=""), "")
       
       rownames(myheatmap) <- selected_clusters_renamed
       colnames(myheatmap) <- selectMarkers(obj)
@@ -419,7 +418,7 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, dest=NULL, p
     par(mar=c(2,2,1,3))
   }
   
-  cluster_assignments_named <- sapply(cluster_assignments, function(x) intToUtf8(64+x))
+  cluster_assignments_named <- vapply(cluster_assignments, function(x) intToUtf8(64+x), "")
   if(n_dim >= 3) {
     
     plot(dm, c(1,2,3), pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=TRUE, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
@@ -440,7 +439,7 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, dest=NULL, p
         width=8000,
         height=6000,
         res=300)
-    cluster_assignments_named <- sapply(cluster_assignments, function(x) paste("G-", x, sep=""))
+    cluster_assignments_named <- vapply(cluster_assignments, function(x) paste("G-", x, sep=""), "")
     if(n_dim >= 3) {
       s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20)
       s3d.coords <- s3d$xyz.convert(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3])

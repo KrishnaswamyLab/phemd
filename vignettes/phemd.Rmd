@@ -2,7 +2,7 @@
 title: "Tutorial on using PhEMD to analyze multi-sample single-cell experiments"
 author: "William Chen"
 date: "October 20, 2018"
-output: html_document
+output: BiocStyle::html_document
 
 vignette: >
     %\VignetteEngine{knitr::rmarkdown}

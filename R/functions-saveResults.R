@@ -141,7 +141,7 @@ printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
   colnames(cell_yield_tab) <- c('sample_ID', 'cell_yield')
   if(!is.null(cluster_assignments)) {
     cluster_assignments_reordered <- cluster_assignments[order_idx]
-    cell_yield_tab$cluster_ID <- sapply(cluster_assignments_reordered, function(x) intToUtf8(64+x))
+    cell_yield_tab$cluster_ID <- vapply(cluster_assignments_reordered, function(x) intToUtf8(64+x), '')
   }
   
   write.table(cell_yield_tab, file=paste(dest, 'cell_yield_tab.txt', sep=''), sep='\t', quote=FALSE, row.names=FALSE, col.names=TRUE)
@@ -173,7 +173,7 @@ printSampleCelltypeFreqs <- function(myobj, dest, cluster_assignments=NULL) {
   colnames(celltype_freqs) <- paste('C-', seq_len(ncol(celltype_freqs)), sep='')
   
   if(!is.null(cluster_assignments)) {
-    celltype_freqs$Sample.Cluster.ID <- sapply(cluster_assignments, function(x) intToUtf8(64+x))
+    celltype_freqs$Sample.Cluster.ID <- vapply(cluster_assignments, function(x) intToUtf8(64+x), '')
   }
   
   outfile <- cbind.data.frame(Sample.Name=sampleNames(myobj), celltype_freqs)
