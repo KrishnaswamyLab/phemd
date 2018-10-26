@@ -71,7 +71,9 @@ plotEmbeddings <- function(obj, path=NULL, cell_model=c('monocle2', 'seurat'), c
       ref_clusters <- list()
       for(i in seq_len(max(state_labels))) {
         ref_clusters[[i]] <- t(assayData(monocle_obj[,state_labels == i])$exprs)
-        ref_cluster_centroids[i,] <- rowMeans(cell_embedding[,state_labels == i])
+        idx_keep <- which(state_labels == i)
+        if(length(idx_keep) > 1) ref_cluster_centroids[i,] <- rowMeans(cell_embedding[,state_labels == i])
+        else if(length(idx_keep) == 1) ref_cluster_centroids[i,] <- cell_embedding[,state_labels == i]
       }
       text(ref_cluster_centroids[,1], ref_cluster_centroids[,2], cex=1.5, col='black')
       dev.off()
@@ -188,7 +190,10 @@ plotHeatmaps <- function(obj, path=NULL, cell_model=c('monocle2','seurat'), sele
     for(i in seq_len(length(selected_clusters))) {
       cur_cluster_idx <- selected_clusters[i]
       cur_cluster <- ref_clusters[[i]]
-      if(!is.null(cur_cluster)) myheatmap[i,] <- colMeans(cur_cluster)
+      if(!is.null(cur_cluster)) {
+        if(nrow(cur_cluster) > 1) myheatmap[i,] <- colMeans(cur_cluster)
+        else if(nrow(cur_cluster) == 1) myheatmap[i,] <- cur_cluster
+      } 
     }
     
     selected_clusters_renamed <- vapply(selected_clusters, function(x) paste("C-", x, sep=""), "")
