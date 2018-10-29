@@ -3,7 +3,9 @@ PhEMD is a package for relating a network of single-cell samples. By first model
 
 
 ## Installing PhEMD
-PhEMD can currently be installed by cloning and installing the package directly from Git. We plan to make PhEMD available through Bioconductor soon.
+PhEMD can currently be installed by cloning and installing the package directly from Git (see below). We plan to make PhEMD available through Bioconductor soon.
+```
 git clone --recursive git://github.com/wschen/phemd.git
 cd phemd
 R CMD INSTALL .
+```
