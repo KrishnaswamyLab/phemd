@@ -242,7 +242,6 @@ setGeneric("selectMarkers<-", function(obj, value) standardGeneric("selectMarker
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("selectMarkers<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@markers <- value
   validObject(obj)
   obj
@@ -262,7 +261,6 @@ setGeneric("rawExpn<-", function(obj, value) standardGeneric("rawExpn<-"))
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("rawExpn<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@data <- value
   validObject(obj)
   obj
@@ -283,7 +281,6 @@ setGeneric("pooledCells<-", function(obj, value) standardGeneric("pooledCells<-"
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("pooledCells<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@data_aggregate <- value
   validObject(obj)
   obj
@@ -304,7 +301,6 @@ setGeneric("subsampledIdx<-", function(obj, value) standardGeneric("subsampledId
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("subsampledIdx<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@data_subsample_idx <- value
   validObject(obj)
   obj
@@ -325,7 +321,6 @@ setGeneric("subsampledBool<-", function(obj, value) standardGeneric("subsampledB
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("subsampledBool<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@subsampled_bool <- value
   validObject(obj)
   obj
@@ -347,7 +342,6 @@ setGeneric("monocleInfo<-", function(obj, value) standardGeneric("monocleInfo<-"
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("monocleInfo<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@monocle_obj <- value
   validObject(obj)
   obj
@@ -368,7 +362,6 @@ setGeneric("seuratInfo<-", function(obj, value) standardGeneric("seuratInfo<-"))
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("seuratInfo<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@seurat_obj <- value
   validObject(obj)
   obj
@@ -389,7 +382,6 @@ setGeneric("celltypeFreqs<-", function(obj, value) standardGeneric("celltypeFreq
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("celltypeFreqs<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@data_cluster_weights <- value
   validObject(obj)
   obj
@@ -410,7 +402,6 @@ setGeneric("batchIDs<-", function(obj, value) standardGeneric("batchIDs<-"))
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("batchIDs<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@experiment_ids <- value
   validObject(obj)
   obj
@@ -431,7 +422,6 @@ setGeneric("GDM<-", function(obj, value) standardGeneric("GDM<-"))
 #' @rdname Phemd-methods
 #' @aliases Phemd,ANY,ANY-method
 setMethod("GDM<-", "Phemd", function(obj, value) {
-  stopifnot(is(obj,"Phemd"))
   obj@emd_dist_mat <- value
   validObject(obj)
   obj
