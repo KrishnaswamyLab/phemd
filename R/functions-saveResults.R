@@ -7,7 +7,7 @@
 #' @param overwrite Boolean representing whether or not to overwrite contents of "dest" with output of printClusterAssignments
 #' @return None
 #' @examples
-#' 
+#' \dontrun{
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -18,7 +18,7 @@
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
-#' 
+#' }
 printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FALSE) {
   snames <- sampleNames(obj)
   if(dir.exists(paste(dest, 'sample_groups', sep='')) && overwrite==FALSE) {
@@ -45,7 +45,7 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
 #' @param overwrite Boolean representing whether or not to overwrite contents of "dest" with output of saveSampleHistograms
 #' @return None
 #' @examples
-#' 
+#' \dontrun{
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -58,7 +58,7 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, dest=NULL, pt_sz=2)
 #' saveSampleHistograms(my_phemdObj_final, cluster_assignments, '.', overwrite=TRUE)
-#' 
+#' }
 saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c('monocle2', 'seurat'), cmap=NULL, overwrite=FALSE) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   if(dir.exists(paste(dest, 'individual_inhibs', sep='')) && overwrite==FALSE) {
@@ -117,7 +117,7 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
 #' @param cluster_assignments Vector of cluster assignments to be included as additional column in output table (optional)
 #' @return None
 #' @examples
-#' 
+#' \dontrun{
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -128,7 +128,7 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printCellYield(my_phemdObj_final, '.', cluster_assignments)
-#' 
+#' }
 printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   nsample <- length(rawExpn(myobj))
@@ -154,7 +154,7 @@ printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
 #' @param cluster_assignments Vector of cluster assignments to be included as additional column in output table (optional)
 #' @return None
 #' @examples
-#' 
+#' \dontrun{
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -165,7 +165,7 @@ printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printSampleCelltypeFreqs(my_phemdObj_final, '.', cluster_assignments)
-#' 
+#' }
 printSampleCelltypeFreqs <- function(myobj, dest, cluster_assignments=NULL) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   celltype_freqs <- as.data.frame(celltypeFreqs(myobj))
