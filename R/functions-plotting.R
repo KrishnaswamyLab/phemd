@@ -131,7 +131,7 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
     selected_clusters <- seq_len(length(ref_clusters))
     myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
     for(i in selected_clusters) {
-      cur_cluster <- ref_clusters[[i]]
+      cur_cluster <- ref_clusters[[as.character(i)]]
       if(!is.null(cur_cluster)) { #at least 1 cell
         if(nrow(cur_cluster) > 1) {
           myheatmap[i,] <- colMeans(cur_cluster)
