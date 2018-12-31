@@ -16,7 +16,7 @@ List of matrices, each of which represents a single-cell sample
 Accessor function for stored multi-sample raw expression data
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 raw_expn_data <- rawExpn(phemdObj)
 
 }

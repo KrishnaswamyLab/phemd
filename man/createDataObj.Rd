@@ -28,6 +28,6 @@ Wrapper function to create 'Phemd' object containing raw expression data and met
 Note that each element in list can have different number of rows (i.e. number of cells in each sample can vary).
 }
 \examples{
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 
 }

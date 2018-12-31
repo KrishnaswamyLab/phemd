@@ -4,13 +4,11 @@
 \alias{plotCellYield}
 \title{Plot cell yield of each sample as bar plot}
 \usage{
-plotCellYield(myobj, dest = NULL, labels = NULL, cmap = NULL,
-  font_sz = 0.6, w = 8, h = 9.5)
+plotCellYield(myobj, labels = NULL, cmap = NULL, font_sz = 0.6,
+  w = 8, h = 9.5)
 }
 \arguments{
 \item{myobj}{Phmed object containing expression data for each sample in 'data' slot}
-
-\item{dest}{Path to existing directory where output should be saved (optional).}
 
 \item{labels}{Vector containing group labels for samples (optional). If not provided, bars will be of uniform color (blue)}
 
@@ -30,7 +28,7 @@ Plots cell yield (number of viable cells) of each single-cell sample in decreasi
 }
 \examples{
 
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -39,6 +37,6 @@ my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 my_phemdObj_final <- generateGDM(my_phemdObj_final)
 my_EMD_mat <- compareSamples(my_phemdObj_final)
 cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
-plotCellYield(my_phemdObj_final, dest=NULL, labels=cluster_assignments, font_sz = 0.8)
+plotCellYield(my_phemdObj_final, labels=cluster_assignments, font_sz = 0.8)
 
 }

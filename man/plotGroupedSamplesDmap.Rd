@@ -4,16 +4,14 @@
 \alias{plotGroupedSamplesDmap}
 \title{Plot diffusion map embedding of samples based on distance matrix}
 \usage{
-plotGroupedSamplesDmap(my_distmat, cluster_assignments, dest = NULL,
-  pt_sz = 1, n_dim = 3, pt_label = NULL, cmap = NULL, w = 8,
-  h = 5, scale.y = 1, angle = 40, autosave = FALSE, ...)
+plotGroupedSamplesDmap(my_distmat, cluster_assignments, pt_sz = 1,
+  n_dim = 3, pt_label = NULL, cmap = NULL, w = 8, h = 5,
+  scale.y = 1, angle = 40, autosave = FALSE, ...)
 }
 \arguments{
 \item{my_distmat}{phemdObj object containing sample names in @snames slot}
 
 \item{cluster_assignments}{Vector containing group assignments for each sample}
-
-\item{dest}{Path to existing directory where output should be saved (optional; prints to standard R plot output if NULL)}
 
 \item{pt_sz}{Size of points representing samples in plot (scaling factor)}
 
@@ -46,7 +44,7 @@ Requires 'destiny' package
 }
 \examples{
 
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -56,6 +54,6 @@ my_phemdObj_final <- generateGDM(my_phemdObj_final)
 my_EMD_mat <- compareSamples(my_phemdObj_final)
 cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
-dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, dest=NULL, pt_sz=2)
+dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, pt_sz=2)
 
 }

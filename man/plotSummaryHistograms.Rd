@@ -4,22 +4,18 @@
 \alias{plotSummaryHistograms}
 \title{Plots cell subtype frequency histograms summarizing each group of samples}
 \usage{
-plotSummaryHistograms(myobj, cluster_assignments, dest = NULL,
-  cell_model = c("monocle2", "seurat"), cmap = NULL,
-  overwrite = FALSE, ncol.plot = 4, ax.lab.sz = 2.5, title.sz = 3)
+plotSummaryHistograms(myobj, cluster_assignments,
+  cell_model = c("monocle2", "seurat"), cmap = NULL, ncol.plot = 4,
+  ax.lab.sz = 2.5, title.sz = 3)
 }
 \arguments{
 \item{myobj}{Phemd object containing cell subtype relative frequency in @data_cluster_weights slot}
 
 \item{cluster_assignments}{Vector containing group assignments for each sample in myobj}
 
-\item{dest}{Path to existing directory where output should be saved}
-
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
 \item{cmap}{Vector containing colors by which histogram bars should be colored (optional)}
-
-\item{overwrite}{Boolean representing whether or not to overwrite contents of "dest" with output of saveSummaryHistograms}
 
 \item{ncol.plot}{Number of columns to use to plot multi-panel histogram plot}
 

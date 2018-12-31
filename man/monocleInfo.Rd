@@ -16,7 +16,7 @@ An object of class 'CellDataSet' (from Monocle)
 Accessor function for stored Monocle object
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 monocle_obj <- monocleInfo(phemdObj)
 
 }

@@ -4,13 +4,11 @@
 \alias{plotEmbeddings}
 \title{Plots Monocle2 cell embedding plots}
 \usage{
-plotEmbeddings(obj, path = NULL, cell_model = c("monocle2", "seurat"),
-  cmap = NULL, w = 4, h = 5, pt_sz = 1, ndims = NULL)
+plotEmbeddings(obj, cell_model = c("monocle2", "seurat"), cmap = NULL,
+  w = 4, h = 5, pt_sz = 1, ndims = NULL)
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle 2 object}
-
-\item{path}{Path to destination folder (must already exist). Optional.}
 
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
@@ -34,10 +32,10 @@ Takes as input a Phemd object containing either a Monocle2 object or Seurat obje
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional packages: 'RColorBrewer', 'cowplot'
 }
 \examples{
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model='gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
-cmap <- plotEmbeddings(my_phemdObj_monocle, path=NULL)
+cmap <- plotEmbeddings(my_phemdObj_monocle)
 }

@@ -16,7 +16,7 @@ An object of class 'Seurat'
 Accessor function for stored Seurat object within Phemd object
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 seurat_obj <- seuratInfo(phemdObj)
 
 }

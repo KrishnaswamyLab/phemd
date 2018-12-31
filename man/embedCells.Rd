@@ -23,7 +23,7 @@ Takes as input a Phemd object with aggregated data and returns updated object wi
 Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregateSamples} needs to be called before running this function.
 }
 \examples{
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_lg <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)

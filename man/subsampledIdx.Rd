@@ -16,7 +16,7 @@ List of vectors each representing the indices of elements in rawExpn(obj) that w
 Accessor function for aggregated cells used for cell subtype definition
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 subsampled_idx_list <- subsampledIdx(phemdObj)
 
 }

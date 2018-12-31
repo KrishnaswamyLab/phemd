@@ -16,7 +16,7 @@ Vector of length num_samples representing the experiment (batch) in which the sa
 Accessor function for batch ID for each sample
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 batch_metadata <- batchIDs(phemdObj)
 
 }

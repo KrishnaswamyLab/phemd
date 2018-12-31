@@ -16,7 +16,7 @@ Boolean represent whether or not subsampling was performed in the data aggregati
 Accessor function for whether or not cells were subsampled when aggregated for cell subtype analysis
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 subsampled <- subsampledBool(phemdObj)
 
 }

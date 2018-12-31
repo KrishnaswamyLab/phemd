@@ -16,7 +16,7 @@ Sqaure matrix representing pairwise distances between cell subtypes
 Accessor function for EMD ground distance matrix
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 gdm <- GDM(phemdObj)
 
 }

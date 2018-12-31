@@ -16,7 +16,7 @@ Matrix representing cell subtype relative frequencies for each sample (num_sampl
 Accessor function for cell subtype distribution for each sample
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 celltype_weights <- celltypeFreqs(phemdObj)
 
 }

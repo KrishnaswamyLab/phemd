@@ -16,7 +16,7 @@ Vector representing gene/protein markers corresponding to expression matrices
 Accessor function for gene/protein markers measured in experiment
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 genes <- selectMarkers(phemdObj)
 
 }

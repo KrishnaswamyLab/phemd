@@ -4,13 +4,11 @@
 \alias{plotHeatmaps}
 \title{Plot heatmap of cell subtypes}
 \usage{
-plotHeatmaps(obj, path = NULL, cell_model = c("monocle2", "seurat"),
+plotHeatmaps(obj, cell_model = c("monocle2", "seurat"),
   selected_genes = NULL, w = 8, h = 5)
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle 2 object}
-
-\item{path}{Path to destination folder (must already exist). Optional for Monocle use cases}
 
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
 
@@ -21,7 +19,7 @@ plotHeatmaps(obj, path = NULL, cell_model = c("monocle2", "seurat"),
 \item{h}{Height of plot in inches}
 }
 \value{
-None
+Heatmap containing expression values for each cell subtype. If cell_model is 'seurat', then returns a list of heatmaps (1 for each batch) that may be subsequently plotted individually
 }
 \description{
 Takes as input a Phemd object containing either a Monocle2 or Seurat object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
@@ -30,12 +28,12 @@ Takes as input a Phemd object containing either a Monocle2 or Seurat object (alr
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional package: 'pheatmap'
 }
 \examples{
-\dontrun{
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
-plotHeatmaps(my_phemdObj_monocle, path=NULL)
-}
+plotHeatmaps(my_phemdObj_monocle)
+
 }

@@ -16,7 +16,7 @@ Numeric matrix representing expression data for cells from all experimental cond
 Accessor function for aggregated cells used for cell subtype definition
 }
 \examples{
-phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 cells_aggregated <- pooledCells(phemdObj)
 
 }

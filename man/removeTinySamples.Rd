@@ -21,7 +21,7 @@ Removes samples from Phemd that have fewer cells than \code{min_sz}
 Note: If used, this function must be called before (and not after) the \code{aggregateSamples} function is called
 }
 \examples{
-my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 
 }
