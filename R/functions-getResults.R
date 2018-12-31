@@ -34,16 +34,13 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
   }
 }
 
-#' @title Saves cell subtype frequency histograms for each sample
-#' @description Saves relative frequency ("weights") of cell subtypes ("bins" or "signatures") in each single-cell sample
+#' @title Gets cell subtype frequency histograms for each sample by cluster ID
+#' @description Gets relative frequency ("weights") of cell subtypes ("bins" or "signatures") in each single-cell sample
 #' @details \code{groupSamples} must be called before calling this function. Saves plots in directory called "individual_inhibs"
 #' @param myobj phemdObj object containing cell subtype relative frequency in @@data_cluster_weights slot
 #' @param cluster_assignments Vector containing group assignments for each sample in myobj
-#' @param dest Path to existing directory where output should be saved
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
-#' @param cmap Vector containing colors by which histogram bars should be colored (optional)
-#' @param overwrite Boolean representing whether or not to overwrite contents of "dest" with output of saveSampleHistograms
-#' @return None
+#' @return List of lists, with outer list representing sample cluster ID and inner list representing cell subtype frequencies of given sample
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
@@ -55,18 +52,9 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
-#' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
-#' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, dest=NULL, pt_sz=2)
-#' saveSampleHistograms(my_phemdObj_final, cluster_assignments, '.', overwrite=TRUE)
+#' weights_by_cluster <- getSampleHistsByCluster(my_phemdObj_final, cluster_assignments)
 #' 
-saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c('monocle2', 'seurat'), cmap=NULL, overwrite=FALSE) {
-  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
-  if(dir.exists(paste(dest, 'individual_inhibs', sep='')) && overwrite==FALSE) {
-    stop('Directory "individual_inhibs" already exists in specified path. Set "overwrite" parameter to TRUE if you want to overwrite existing directory')
-  }
-  unlink(paste(dest, 'individual_inhibs', sep=''), recursive=TRUE)
-  dir.create(file.path(paste(dest, 'individual_inhibs', sep='')), showWarnings = FALSE) # create folder for output
-  
+getSampleHistsByCluster <- function(myobj, cluster_assignments, cell_model=c('monocle2', 'seurat')) {
   cell_model <- match.arg(cell_model, c('monocle2','seurat'))
   if(cell_model == 'monocle2') {
     monocle_obj <- monocleInfo(myobj)
@@ -80,33 +68,21 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
   }
   
   cluster_weights <- celltypeFreqs(myobj)
-  #cmap <- rainbow(max(state_labels))
-  if(is.null(cmap)) {
-    getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-    cmap <- getPalette(max(state_labels))
-  }
-  
   snames <- sNames(myobj)
   
+  weights_by_cluster <- list()
   for(i in seq_len(max(cluster_assignments))) {
-    # Create folder "Group %s" if it doesn't already exist
-    dir.create(file.path(paste(dest, sprintf('individual_inhibs/Group %s',intToUtf8(64+i)), sep='')), showWarnings = FALSE)
     cur_inhibs <- which(cluster_assignments == i)
     for(j in seq_len(length(cur_inhibs))) {
       cur_idx <- cur_inhibs[j]
-      
-      png(filename=paste(dest, sprintf("individual_inhibs/Group %s/%s.png",intToUtf8(64+i),snames[cur_idx]), sep=""),
-          units="px",
-          width=2400,
-          height=1800,
-          res=300)
-      par(mar=c(6,6,4,2))
-      barplot(cluster_weights[cur_idx,], main='', col=cmap, xlab='', ylab = "Frequency (%)", ylim = c(0, max(max(cluster_weights[cur_idx,])+0.1, 0.4)), cex.axis=1.5, cex.names = 2, cex.lab = 2.5, names.arg = seq_len(ncol(cluster_weights)))
-      title(xlab="Cell subtype", line=3.5, cex.lab=2.5)
-      title(main=snames[cur_idx], line=0, cex.main=3)
-      dev.off()
+      cur_sname <- snames[cur_idx]
+      if(is.null(weights_by_cluster[[intToUtf8(64+i)]])) {
+        weights_by_cluster[[intToUtf8(64+i)]] <- list()
+      }
+      weights_by_cluster[[intToUtf8(64+i)]][[cur_sname]] <- cluster_weights[cur_idx,]
     }
   }
+  return(weights_by_cluster)
 }
 
 
@@ -148,7 +124,7 @@ getCellYield <- function(myobj, cluster_assignments=NULL) {
 #' @description Returns cell subtype distribution for each single-cell sample along with (optional) final inhibitor cluster assignment
 #' @param myobj phemdObj object containing expression data for each sample in 'data' slot
 #' @param cluster_assignments Vector of cluster assignments to be included as additional column in output table (optional)
-#' @return None
+#' @return Data frame representing relative frequencies of each cell subtype along with (optional) final inhibitor cluster assignment for each single-cell sample
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))

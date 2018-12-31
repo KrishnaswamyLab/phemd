@@ -219,18 +219,14 @@ plotGroupedSamplesDmap(my_distmat, group_assignments, pt_sz = 1.5)
 plotGroupedSamplesDmap(my_distmat, group_assignments, pt_sz = 1.5)
 ```
 
-To plot the cell subtype distribution on a per-sample basis, use the following 
-plotting function.
+To retrieve the cell subtype distribution on a per-sample basis, use the 
+following function. Histograms can be subsequently plotted for a given sample
+as desired.
 
 ```{r echo=T, results = 'hide'}
 # Plot cell subtype distribution (histogram) for each sample
-saveSampleHistograms(myobj, group_assignments, savedest, 
-                       cell_model='monocle2', cmap)
+getSampleHistsByCluster(myobj, group_assignments, cell_model='monocle2')
 ```
-
-Note that the *saveSampleHistograms()* function saves each histogram as a 
-separate file in the *savedest* output folder rather than plotting them in a
-single plot (due to an often large number of samples).
 
 To plot cell subtype histograms summarizing groups of similar samples (bin-wise
 mean of each cell subtype across all samples assigned to a particular group), 
