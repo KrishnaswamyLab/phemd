@@ -7,8 +7,8 @@
 #' @param overwrite Boolean representing whether or not to overwrite contents of "dest" with output of printClusterAssignments
 #' @return None
 #' @examples
-#' \dontrun{
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' 
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -18,9 +18,9 @@
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
-#' }
+#' 
 printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FALSE) {
-  snames <- sampleNames(obj)
+  snames <- sNames(obj)
   if(dir.exists(paste(dest, 'sample_groups', sep='')) && overwrite==FALSE) {
     stop('Directory "sample_groups" already exists in specified path. Set "overwrite" parameter to TRUE if you want to overwrite existing directory')
   }
@@ -45,8 +45,8 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
 #' @param overwrite Boolean representing whether or not to overwrite contents of "dest" with output of saveSampleHistograms
 #' @return None
 #' @examples
-#' \dontrun{
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' 
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -58,7 +58,7 @@ printClusterAssignments <- function(cluster_assignments, obj, dest, overwrite=FA
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, dest=NULL, pt_sz=2)
 #' saveSampleHistograms(my_phemdObj_final, cluster_assignments, '.', overwrite=TRUE)
-#' }
+#' 
 saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c('monocle2', 'seurat'), cmap=NULL, overwrite=FALSE) {
   if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
   if(dir.exists(paste(dest, 'individual_inhibs', sep='')) && overwrite==FALSE) {
@@ -86,7 +86,7 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
     cmap <- getPalette(max(state_labels))
   }
   
-  snames <- sampleNames(myobj)
+  snames <- sNames(myobj)
   
   for(i in seq_len(max(cluster_assignments))) {
     # Create folder "Group %s" if it doesn't already exist
@@ -110,15 +110,14 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
 }
 
 
-#' @title Prints cell yield of each sample as a table
-#' @description Prints cell yield (number of viable cells) of each single-cell sample in decreasing order
+#' @title Gets cell yield of each sample as a table
+#' @description Gets cell yield (number of viable cells) of each single-cell sample in decreasing order
 #' @param myobj phemdObj object containing expression data for each sample in 'data' slot
-#' @param dest Path to existing directory where output should be saved
 #' @param cluster_assignments Vector of cluster assignments to be included as additional column in output table (optional)
-#' @return None
+#' @return Data frame representing cell yield of each sample
 #' @examples
-#' \dontrun{
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' 
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -127,35 +126,32 @@ saveSampleHistograms <- function(myobj, cluster_assignments, dest, cell_model=c(
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
-#' printCellYield(my_phemdObj_final, '.', cluster_assignments)
-#' }
-printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
-  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
+#' getCellYield(my_phemdObj_final, cluster_assignments)
+#' 
+getCellYield <- function(myobj, cluster_assignments=NULL) {
   nsample <- length(rawExpn(myobj))
   cell_yield <- vapply(rawExpn(myobj), nrow, integer(1L))
   
   order_idx <- order(cell_yield, decreasing=FALSE)
   cell_yield_ordered <- cell_yield[order_idx]
-  snames_ordered <- sampleNames(myobj)[order_idx]
+  snames_ordered <- sNames(myobj)[order_idx]
   cell_yield_tab <- cbind.data.frame(snames_ordered, cell_yield_ordered)
   colnames(cell_yield_tab) <- c('sample_ID', 'cell_yield')
   if(!is.null(cluster_assignments)) {
     cluster_assignments_reordered <- cluster_assignments[order_idx]
     cell_yield_tab$cluster_ID <- vapply(cluster_assignments_reordered, function(x) intToUtf8(64+x), '')
   }
-  
-  write.table(cell_yield_tab, file=paste(dest, 'cell_yield_tab.txt', sep=''), sep='\t', quote=FALSE, row.names=FALSE, col.names=TRUE)
+  return(cell_yield_tab)
 }
 
-#' @title Prints cell subtype distribution for each sample as a table
-#' @description Prints cell subtype distribution for each single-cell sample along with (optional) final inhibitor cluster assignment
+#' @title Returns cell subtype distribution for each sample as a table
+#' @description Returns cell subtype distribution for each single-cell sample along with (optional) final inhibitor cluster assignment
 #' @param myobj phemdObj object containing expression data for each sample in 'data' slot
-#' @param dest Path to existing directory where output should be saved
 #' @param cluster_assignments Vector of cluster assignments to be included as additional column in output table (optional)
 #' @return None
 #' @examples
-#' \dontrun{
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' 
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -164,10 +160,9 @@ printCellYield <- function(myobj, dest, cluster_assignments=NULL) {
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
-#' printSampleCelltypeFreqs(my_phemdObj_final, '.', cluster_assignments)
-#' }
-printSampleCelltypeFreqs <- function(myobj, dest, cluster_assignments=NULL) {
-  if(substr(dest,nchar(dest), nchar(dest)) != '/') dest <- paste(dest, '/', sep='') #ensure path ends with a slash
+#' getSampleCelltypeFreqs(my_phemdObj_final, cluster_assignments)
+#' 
+getSampleCelltypeFreqs <- function(myobj, cluster_assignments=NULL) {
   celltype_freqs <- as.data.frame(celltypeFreqs(myobj))
   celltype_freqs <- round(celltype_freqs, digits=3)
   colnames(celltype_freqs) <- paste('C-', seq_len(ncol(celltype_freqs)), sep='')
@@ -176,7 +171,6 @@ printSampleCelltypeFreqs <- function(myobj, dest, cluster_assignments=NULL) {
     celltype_freqs$Sample.Cluster.ID <- vapply(cluster_assignments, function(x) intToUtf8(64+x), '')
   }
   
-  outfile <- cbind.data.frame(Sample.Name=sampleNames(myobj), celltype_freqs)
-  
-  write.table(outfile, file=paste(dest, 'cell_subtype_distributions.txt', sep=''), sep='\t', quote=FALSE, row.names=FALSE, col.names=TRUE)
+  weightsTab <- cbind.data.frame(Sample.Name=sNames(myobj), celltype_freqs)
+  return(weightsTab)
 }

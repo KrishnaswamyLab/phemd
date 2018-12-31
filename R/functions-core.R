@@ -354,7 +354,7 @@ gaussianffLocal <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
 #' @param valtype Type of assay data (i.e. "counts", "normcounts", "logcounts", "tpm", "cpm") if datatype is "sce"
 #' @return 'Phemd' object containing raw multi-sample expression data and associated metadata
 #' @examples
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' 
 createDataObj <- function(data, markers, snames, datatype='list', valtype='counts') {
   if(datatype == 'list') {
@@ -423,14 +423,14 @@ bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
 #' @param min_sz Minimum number of cells in each sample to be retained
 #' @return 'Phemd' object containing raw multi-sample expression data and associated metadata (same as input minus removed samples)
 #' @examples
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10) #removes samples with fewer than 10 cells
 #' 
 removeTinySamples <- function(obj, min_sz=20) {
   stopifnot(is(obj,'Phemd'))
   stopifnot(mode(min_sz) == 'numeric')
   all_data <- rawExpn(obj)
-  all_snames <- sampleNames(obj)
+  all_snames <- sNames(obj)
   all_sample_sz <- getSampleSizes(all_data)
   to_remove_idx <- which(all_sample_sz < min_sz)
   if(length(to_remove_idx) == 0) return(obj)
@@ -455,7 +455,7 @@ removeTinySamples <- function(obj, min_sz=20) {
 #' @param max_cells Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run
 #' @return Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
 #' @examples
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' 
@@ -504,7 +504,7 @@ aggregateSamples <- function(obj, max_cells=12000) {
 #' @return Same as input 'Phemd' object after performing feature-selection based dimensionality reduction on aggregated expression data
 #' @examples
 #' 
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS', 'FOXP3', 'LAG3'))
@@ -534,7 +534,7 @@ selectFeatures <- function(obj, selected_genes) {
 #' @param ... Additional parameters to be passed to \code{reduceDimension} function
 #' @return Same as input 'Phemd' object with additional Monocle2 object in @@monocle_obj slot
 #' @examples
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_lg <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -608,7 +608,7 @@ embedCells <- function(obj, data_model = 'negbinomial_sz', ...) {
 #' @return Same as input 'Phemd' object with updated Monocle2 object in @@monocle_obj slot containing cell state and pseudotime assignments
 #' @examples
 #' 
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model='gaussianff', sigma=0.02, maxIter=2)
@@ -635,7 +635,7 @@ orderCellsMonocle <- function(obj, ...) {
 #' @return 'Phemd' object with cell subtype frequencies of each sample in @@data_cluster_weights slot
 #' @examples
 #' 
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -779,7 +779,7 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 #' @return Phemd object with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
 #' 
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -830,7 +830,7 @@ generateGDM <- function(obj, cell_model=c('monocle2', 'seurat')) {
 #' @return Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 #' @examples
 #'
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
@@ -877,7 +877,7 @@ compareSamples <- function(obj) {
 #' @return Vector containing group assignments for each sample (same order as row-order of distmat) based on user-specified partitioning method (e.g. hierarchical clustering)
 #' @examples
 #' 
-#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)

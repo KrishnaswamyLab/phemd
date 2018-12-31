@@ -49,8 +49,8 @@ setValidity("Phemd", function(object) {
   if(length(rawExpn(object)) < 1) {
     return('Phemd object must have at least 1 sample in rawExpn(object)')
   }
-  if(length(sampleNames(object)) != length(rawExpn(object))) {
-    return('sampleNames(object) must be the same length as rawExpn(object)')
+  if(length(sNames(object)) != length(rawExpn(object))) {
+    return('sNames(object) must be the same length as rawExpn(object)')
   }
   if(sum(dim(pooledCells(object))) == 0 && ncol(rawExpn(object)[[1]]) != length(selectMarkers(object))) {
     return('Number of markers measured in rawExpn(object) must equal number of markers listed in selectMarkers(object)')
@@ -72,7 +72,7 @@ setValidity("Phemd", function(object) {
 #' @return List of matrices, each of which represents a single-cell sample
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' raw_expn_data <- rawExpn(phemdObj)
 #' 
 rawExpn <- function(obj) {
@@ -87,7 +87,7 @@ rawExpn <- function(obj) {
 #' @return An object of class 'CellDataSet' (from Monocle)
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' monocle_obj <- monocleInfo(phemdObj)
 #' 
 monocleInfo <- function(obj) {
@@ -101,7 +101,7 @@ monocleInfo <- function(obj) {
 #' @return An object of class 'Seurat'
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' seurat_obj <- seuratInfo(phemdObj)
 #' 
 seuratInfo <- function(obj) {
@@ -115,7 +115,7 @@ seuratInfo <- function(obj) {
 #' @return Sqaure matrix representing pairwise distances between cell subtypes
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' gdm <- GDM(phemdObj)
 #' 
 GDM <- function(obj) {
@@ -129,7 +129,7 @@ GDM <- function(obj) {
 #' @return Vector representing gene/protein markers corresponding to expression matrices
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' genes <- selectMarkers(phemdObj)
 #' 
 selectMarkers <- function(obj) {
@@ -143,10 +143,10 @@ selectMarkers <- function(obj) {
 #' @return Vector representing sample names corresponding to expression matrices
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
-#' sampleIDs <- sampleNames(phemdObj)
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' sampleIDs <- sNames(phemdObj)
 #' 
-sampleNames <- function(obj) {
+sNames <- function(obj) {
   stopifnot(is(obj,"Phemd"))
   obj@snames
 }
@@ -158,7 +158,7 @@ sampleNames <- function(obj) {
 #' @return Numeric matrix representing expression data for cells from all experimental conditions (rows = markers, cols = cells)
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' cells_aggregated <- pooledCells(phemdObj)
 #' 
 pooledCells <- function(obj) {
@@ -172,7 +172,7 @@ pooledCells <- function(obj) {
 #' @return List of vectors each representing the indices of elements in rawExpn(obj) that were subsampled and combined to form "data_aggregate"
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' subsampled_idx_list <- subsampledIdx(phemdObj)
 #' 
 subsampledIdx <- function(obj) {
@@ -186,7 +186,7 @@ subsampledIdx <- function(obj) {
 #' @return Boolean represent whether or not subsampling was performed in the data aggregation process
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' subsampled <- subsampledBool(phemdObj)
 #' 
 subsampledBool <- function(obj) {
@@ -200,7 +200,7 @@ subsampledBool <- function(obj) {
 #' @return Matrix representing cell subtype relative frequencies for each sample (num_samples x num_genes)
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' celltype_weights <- celltypeFreqs(phemdObj)
 #' 
 celltypeFreqs <- function(obj) {
@@ -214,7 +214,7 @@ celltypeFreqs <- function(obj) {
 #' @return Vector of length num_samples representing the experiment (batch) in which the sample was profiled
 #' @export
 #' @examples
-#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames))
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' batch_metadata <- batchIDs(phemdObj)
 #' 
 batchIDs <- function(obj) {
