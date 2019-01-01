@@ -25,6 +25,7 @@ Takes as input a Phemd object with aggregated data and returns updated object af
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS', 'FOXP3', 'LAG3'))
+my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes=c('TP53', 
+'EGFR', 'KRAS', 'FOXP3', 'LAG3'))
 
 }

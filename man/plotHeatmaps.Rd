@@ -5,7 +5,7 @@
 \title{Plot heatmap of cell subtypes}
 \usage{
 plotHeatmaps(obj, cell_model = c("monocle2", "seurat"),
-  selected_genes = NULL, w = 8, h = 5)
+  selected_genes = NULL, w = 8, h = 5, ...)
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle 2 object}
@@ -17,6 +17,8 @@ plotHeatmaps(obj, cell_model = c("monocle2", "seurat"),
 \item{w}{Width of plot in inches}
 
 \item{h}{Height of plot in inches}
+
+\item{...}{Additional parameters to be passed on to pheatmap function}
 }
 \value{
 Heatmap containing expression values for each cell subtype. If cell_model is 'seurat', then returns a list of heatmaps (1 for each batch) that may be subsequently plotted individually
@@ -33,7 +35,8 @@ my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data)
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes)
-my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', pseudo_expr=0, sigma=0.02, maxIter=2)
+my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', 
+pseudo_expr=0, sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')
 

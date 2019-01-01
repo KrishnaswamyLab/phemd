@@ -111,6 +111,7 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
 #' @param selected_genes Vector containing gene names to include in heatmap (optional)
 #' @param w Width of plot in inches
 #' @param h Height of plot in inches
+#' @param ... Additional parameters to be passed on to pheatmap function
 #' @return Heatmap containing expression values for each cell subtype. If cell_model is 'seurat', then returns a list of heatmaps (1 for each batch) that may be subsequently plotted individually
 #' @examples
 #' 
@@ -118,11 +119,12 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes)
-#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', pseudo_expr=0, sigma=0.02, maxIter=2)
+#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', 
+#' pseudo_expr=0, sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')
 #' 
-plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5) {
+plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5, ...) {
   cell_model <- match.arg(cell_model, c('monocle2','seurat'))
   if(cell_model == 'monocle2') {
     # retrieve reference clusters
@@ -174,7 +176,8 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
              fontsize_row=12,
              cellwidth=10,
              width=w,
-             height=h
+             height=h,
+             ...
     )
     return(myheatmap2)
   } else if(cell_model == 'seurat') {
@@ -242,7 +245,8 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
              fontsize_row=12,
              cellwidth=10,
              width=w,
-             height=h)
+             height=h,
+             ...)
     return(myheatmaps_all)
   } else {
     stop('Error: cell_model must be either "monocle2" or "seurat"')

@@ -126,7 +126,8 @@ getArithmeticCentroids <- function(ref_clusters) {
 #' @return Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}
 #' @examples
 #' \dontrun{
-#' cur_cells_cluster_labels <- assignCellClusterNearestNode(cur_cells_expn_data, clustered_cells_expn_data, clustered_cells_cluster_labels, cell_model='monocle2')
+#' cur_cells_cluster_labels <- assignCellClusterNearestNode(cur_cells_expn_data, 
+#' clustered_cells_expn_data, clustered_cells_cluster_labels, cell_model='monocle2')
 #' }
 assignCellClusterNearestNode <- function(cur_cells, ref_cells, ref_cell_labels, cell_model=c('monocle2', 'seurat')) {
   if(nrow(ref_cells) != length(ref_cell_labels)) stop("Error: number of cells and cell labels do not match")
@@ -507,7 +508,8 @@ aggregateSamples <- function(obj, max_cells=12000) {
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-#' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes=c('TP53', 'EGFR', 'KRAS', 'FOXP3', 'LAG3'))
+#' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes=c('TP53', 
+#' 'EGFR', 'KRAS', 'FOXP3', 'LAG3'))
 #' 
 selectFeatures <- function(obj, selected_genes) {
   if(isempty(pooledCells(obj))) stop('slot "data_aggregate" is empty; please call aggregateSamples() before running selectFeatures()')
