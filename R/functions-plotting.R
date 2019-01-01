@@ -117,23 +117,24 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
+#' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes)
+#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', pseudo_expr=0, sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
-#' plotHeatmaps(my_phemdObj_monocle)
+#' myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')
 #' 
 plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5) {
-  
   cell_model <- match.arg(cell_model, c('monocle2','seurat'))
   if(cell_model == 'monocle2') {
-    
     # retrieve reference clusters
     ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
     selected_clusters <- seq_len(length(ref_clusters))
     myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
+    print(dim(myheatmap))
     for(i in selected_clusters) {
-      cur_cluster <- ref_clusters[[as.character(i)]]
+      cur_cluster <- ref_clusters[[i]]
       if(!is.null(cur_cluster)) { #at least 1 cell
         if(nrow(cur_cluster) > 1) {
+          print(dim(cur_cluster))
           myheatmap[i,] <- colMeans(cur_cluster)
         } else {
           myheatmap[i,] <- cur_cluster #only 1 cell
@@ -141,7 +142,7 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
       } 
     }
     
-    selected_clusters_renamed <- vapply(selected_clusters, function(x) paste("C-", x, sep=""), "")
+    selected_clusters_renamed <- vapply(names(ref_clusters), function(x) paste("C-", x, sep=""), "")
     
     rownames(myheatmap) <- selected_clusters_renamed
     colnames(myheatmap) <- selectMarkers(obj)
