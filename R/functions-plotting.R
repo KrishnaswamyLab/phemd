@@ -129,12 +129,10 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
     ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
     selected_clusters <- seq_len(length(ref_clusters))
     myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
-    print(dim(myheatmap))
     for(i in selected_clusters) {
       cur_cluster <- ref_clusters[[i]]
       if(!is.null(cur_cluster)) { #at least 1 cell
         if(nrow(cur_cluster) > 1) {
-          print(dim(cur_cluster))
           myheatmap[i,] <- colMeans(cur_cluster)
         } else {
           myheatmap[i,] <- cur_cluster #only 1 cell
