@@ -234,9 +234,11 @@ batchIDs <- function(obj) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
-#' selectMarkers(phemdObj) <- new_markers
-#' }
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' new_genes <- all_genes
+#' new_genes[1] <- 'IL2R'
+#' selectMarkers(phemdObj) <- new_genes
+#' 
 setGeneric("selectMarkers<-", function(obj, value) standardGeneric("selectMarkers<-"))
 
 #' @rdname Phemd-methods
@@ -253,9 +255,11 @@ setMethod("selectMarkers<-", "Phemd", function(obj, value) {
 #' @aliases Phemd,character,ANY-method
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' new_expn_data <- all_expn_data
+#' new_expn_data <- lapply(new_expn_data, function(x) {log2(x+1)})
 #' rawExpn(phemdObj) <- new_expn_data
-#' }
+#'
 setGeneric("rawExpn<-", function(obj, value) standardGeneric("rawExpn<-"))
 
 #' @rdname Phemd-methods
@@ -273,9 +277,10 @@ setMethod("rawExpn<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
-#' pooledCells(phemdObj) <- new_aggregated_data
-#' }
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' aggregated_data <- t(do.call(rbind,all_expn_data))
+#' pooledCells(phemdObj) <- aggregated_data
+#' 
 setGeneric("pooledCells<-", function(obj, value) standardGeneric("pooledCells<-"))
 
 #' @rdname Phemd-methods
@@ -293,9 +298,10 @@ setMethod("pooledCells<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' subsampledIdxList<- rep(list(1:10), length(all_expn_data)) #subsampled cells 1-10 from each sample
 #' subsampledIdx(phemdObj) <- subsampledIdxList
-#' }
+#' 
 setGeneric("subsampledIdx<-", function(obj, value) standardGeneric("subsampledIdx<-"))
 
 #' @rdname Phemd-methods
@@ -313,9 +319,9 @@ setMethod("subsampledIdx<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' subsampledBool(phemdObj) <- TRUE
-#' }
+#' 
 setGeneric("subsampledBool<-", function(obj, value) standardGeneric("subsampledBool<-"))
 
 #' @rdname Phemd-methods
@@ -334,9 +340,11 @@ setMethod("subsampledBool<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' mydata <- pooledCells(phemdObj)
+#' myCellDataSet <- newCellDataSet(mydata,phenoData=NULL, expressionFamily=VGAM::negbinomial.size())
 #' monocleInfo(phemdObj) <- myCellDataSet
-#' }
+#' 
 setGeneric("monocleInfo<-", function(obj, value) standardGeneric("monocleInfo<-"))
 
 #' @rdname Phemd-methods
@@ -354,9 +362,10 @@ setMethod("monocleInfo<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object containing Seurat object
 #' @export
 #' @examples
-#' \dontrun{
-#' seuratInfo(phemdObj) <- mySeuratObj
-#' }
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' seuratInfo(phemdObj) <- my_seuratObj
+#' 
 setGeneric("seuratInfo<-", function(obj, value) standardGeneric("seuratInfo<-"))
 
 #' @rdname Phemd-methods
@@ -374,9 +383,11 @@ setMethod("seuratInfo<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' myCellTypeFreqs <- matrix(rexp(length(all_expn_data)*10, rate=.1), ncol=10)
+#' myCellTypeFreqs <- apply(myCellTypeFreqs, 1, function(x) {x / sum(x)})
 #' celltypeFreqs(phemdObj) <- myCellTypeFreqs
-#' }
+#' 
 setGeneric("celltypeFreqs<-", function(obj, value) standardGeneric("celltypeFreqs<-"))
 
 #' @rdname Phemd-methods
@@ -394,9 +405,11 @@ setMethod("celltypeFreqs<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
-#' batchIDs(phemdObj) <- c('A', 'A', 'A', 'B', 'B')
-#' }
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' seuratInfo(phemdObj) <- my_seuratObj
+#' batchIDs(phemdObj) <- rep('A', length(all_expn_data))
+#' 
 setGeneric("batchIDs<-", function(obj, value) standardGeneric("batchIDs<-"))
 
 #' @rdname Phemd-methods
@@ -414,9 +427,11 @@ setMethod("batchIDs<-", "Phemd", function(obj, value) {
 #' @return Updated Phemd object
 #' @export
 #' @examples
-#' \dontrun{
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' cluster_locs <- 1:10
+#' myGDM <- as.matrix(dist(cluster_locs))
 #' GDM(phemdObj) <- myGDM
-#' }
+#' 
 setGeneric("GDM<-", function(obj, value) standardGeneric("GDM<-"))
 
 #' @rdname Phemd-methods

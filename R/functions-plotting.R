@@ -367,7 +367,6 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_d
 #' @param title.sz Scaling factor for plot title (default 3)
 #' @return None
 #' @examples
-#' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)

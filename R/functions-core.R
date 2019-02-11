@@ -397,9 +397,13 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
 #' @param batch.colname Name of column in Seurat object that denotes batch ID
 #' @return 'Phemd' object containing with attached Seurat object
 #' @examples
-#' \dontrun{
+#' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' my_seuratObj <- Seurat::ScaleData(object = my_seuratObj, do.scale=FALSE, do.center=FALSE)
+#' my_seuratObj <- Seurat::RunPCA(object = my_seuratObj, pc.genes = colnames(all_expn_data[[1]]), do.print = FALSE)
+#' my_seuratObj <- Seurat::FindClusters(my_seuratObj, reduction.type = "pca", dims.use = 1:10, resolution = 0.6, print.output = 0, save.SNN = TRUE)
 #' my_phemdObj <- bindSeuratObj(my_phemdObj, my_seuratObj)
-#' }
+#' 
 bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
   stopifnot(is(seurat_obj,'seurat'))
   # ensure cluster names are 1-indexed
@@ -454,16 +458,19 @@ removeTinySamples <- function(obj, min_sz=20) {
 #' @details Subsamples cells as necessary based on \code{max_cells}. If subsampling is performed, an equal number of cells are subsampled from each sample
 #' @param obj 'Phemd' object containing raw expression data and associated metadata
 #' @param max_cells Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run
+#' @param cur_seed Seed for subsampling cells during aggregation proceess (set to NA if not desired)
 #' @return Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
-#' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
+#' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000, cur_seed=112)
 #' 
-aggregateSamples <- function(obj, max_cells=12000) {
+aggregateSamples <- function(obj, max_cells=12000, cur_seed=112) {
   stopifnot(is(obj, 'Phemd'))
   stopifnot(mode(max_cells) == 'numeric')
-  set.seed(112) # for reproducibility
+  if(!is.na(cur_seed)) {
+    set.seed(cur_seed) # for reproducibility
+  }
   all_data <- rawExpn(obj)
   nsample <- length(all_data)
   if(nsample == 0) return(obj)

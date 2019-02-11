@@ -113,34 +113,49 @@ Setter function for batch IDs of each single-cell sample
 Setter function for EMD ground distance matrix
 }
 \examples{
-\dontrun{
-selectMarkers(phemdObj) <- new_markers
-}
-\dontrun{
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+new_genes <- all_genes
+new_genes[1] <- 'IL2R'
+selectMarkers(phemdObj) <- new_genes
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+new_expn_data <- all_expn_data
+new_expn_data <- lapply(new_expn_data, function(x) {log2(x+1)})
 rawExpn(phemdObj) <- new_expn_data
-}
-\dontrun{
-pooledCells(phemdObj) <- new_aggregated_data
-}
-\dontrun{
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+aggregated_data <- t(do.call(rbind,all_expn_data))
+pooledCells(phemdObj) <- aggregated_data
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+subsampledIdxList<- rep(list(1:10), length(all_expn_data)) #subsampled cells 1-10 from each sample
 subsampledIdx(phemdObj) <- subsampledIdxList
-}
-\dontrun{
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 subsampledBool(phemdObj) <- TRUE
-}
-\dontrun{
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+mydata <- pooledCells(phemdObj)
+myCellDataSet <- newCellDataSet(mydata,phenoData=NULL, expressionFamily=VGAM::negbinomial.size())
 monocleInfo(phemdObj) <- myCellDataSet
-}
-\dontrun{
-seuratInfo(phemdObj) <- mySeuratObj
-}
-\dontrun{
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+seuratInfo(phemdObj) <- my_seuratObj
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+myCellTypeFreqs <- matrix(rexp(length(all_expn_data)*10, rate=.1), ncol=10)
+myCellTypeFreqs <- apply(myCellTypeFreqs, 1, function(x) {x / sum(x)})
 celltypeFreqs(phemdObj) <- myCellTypeFreqs
-}
-\dontrun{
-batchIDs(phemdObj) <- c('A', 'A', 'A', 'B', 'B')
-}
-\dontrun{
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+seuratInfo(phemdObj) <- my_seuratObj
+batchIDs(phemdObj) <- rep('A', length(all_expn_data))
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+cluster_locs <- 1:10
+myGDM <- as.matrix(dist(cluster_locs))
 GDM(phemdObj) <- myGDM
-}
+
 }

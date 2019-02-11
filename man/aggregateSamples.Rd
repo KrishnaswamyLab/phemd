@@ -4,12 +4,14 @@
 \alias{aggregateSamples}
 \title{Aggregate expression data from all samples}
 \usage{
-aggregateSamples(obj, max_cells = 12000)
+aggregateSamples(obj, max_cells = 12000, cur_seed = 112)
 }
 \arguments{
 \item{obj}{'Phemd' object containing raw expression data and associated metadata}
 
 \item{max_cells}{Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run}
+
+\item{cur_seed}{Seed for subsampling cells during aggregation proceess (set to NA if not desired)}
 }
 \value{
 Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
@@ -23,6 +25,6 @@ Subsamples cells as necessary based on \code{max_cells}. If subsampling is perfo
 \examples{
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
-my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
+my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000, cur_seed=112)
 
 }
