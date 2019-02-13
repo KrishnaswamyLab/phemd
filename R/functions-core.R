@@ -462,7 +462,7 @@ removeTinySamples <- function(obj, min_sz=20) {
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
-#' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000, cur_seed=112)
+#' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' 
 aggregateSamples <- function(obj, max_cells=12000) {
   stopifnot(is(obj, 'Phemd'))
