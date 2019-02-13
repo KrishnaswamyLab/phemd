@@ -4,14 +4,12 @@
 \alias{aggregateSamples}
 \title{Aggregate expression data from all samples}
 \usage{
-aggregateSamples(obj, max_cells = 12000, cur_seed = 112)
+aggregateSamples(obj, max_cells = 12000)
 }
 \arguments{
 \item{obj}{'Phemd' object containing raw expression data and associated metadata}
 
 \item{max_cells}{Maximum number of cells across all samples to be included in final matrix on which Monocle 2 will be run}
-
-\item{cur_seed}{Seed for subsampling cells during aggregation proceess (set to NA if not desired)}
 }
 \value{
 Same as input 'Phemd' object with additional slot 'data_aggregate' containing aggregated expression data (num_markers x num_cells)
