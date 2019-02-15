@@ -1,7 +1,7 @@
 Package: phemd
 Type: Package
 Title: Phenotypic EMD for comparison of single-cell samples
-Version: 0.99.36
+Version: 0.99.37
 Author: William S Chen
 Maintainer: William S Chen <wil.yum.chen@gmail.com>
 Description: Package for comparing and generating a low-dimensional embedding
@@ -9,7 +9,7 @@ Description: Package for comparing and generating a low-dimensional embedding
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Depends: monocle
+Depends: R (>= 3.6), monocle
 Imports: 
   SingleCellExperiment, 
   RColorBrewer, 
