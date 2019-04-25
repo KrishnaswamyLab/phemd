@@ -21,7 +21,7 @@ Allows user to attach batch-normalized reference cell data from Seurat into 'Phe
 }
 \examples{
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 my_seuratObj <- Seurat::ScaleData(object = my_seuratObj, do.scale=FALSE, do.center=FALSE)
 my_seuratObj <- Seurat::RunPCA(object = my_seuratObj, pc.genes = colnames(all_expn_data[[1]]), do.print = FALSE)
 my_seuratObj <- Seurat::FindClusters(my_seuratObj, reduction.type = "pca", dims.use = 1:10, resolution = 0.6, print.output = 0, save.SNN = TRUE)

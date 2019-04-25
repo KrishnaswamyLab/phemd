@@ -140,7 +140,7 @@ myCellDataSet <- newCellDataSet(mydata,phenoData=NULL, expressionFamily=VGAM::ne
 monocleInfo(phemdObj) <- myCellDataSet
 
 phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 seuratInfo(phemdObj) <- my_seuratObj
 
 phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
@@ -149,7 +149,7 @@ myCellTypeFreqs <- apply(myCellTypeFreqs, 1, function(x) {x / sum(x)})
 celltypeFreqs(phemdObj) <- myCellTypeFreqs
 
 phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 seuratInfo(phemdObj) <- my_seuratObj
 batchIDs(phemdObj) <- rep('A', length(all_expn_data))
 
