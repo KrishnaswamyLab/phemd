@@ -17,90 +17,92 @@
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' cmap <- plotEmbeddings(my_phemdObj_monocle)
 plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w=4, h=5, pt_sz=1, ndims=NULL) {
-  cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-  if(cell_model == 'monocle2') {
-    monocle_obj <- monocleInfo(obj)
-    cell_embedding <- reducedDimS(monocle_obj)
-    mydata <- pooledCells(obj)
-    
-    # Extract state labels from monocle data object
-    labels <- pData(phenoData(monocle_obj))
-    state_labels <- as.numeric(labels$State)
-    
-    levels <- levels(factor(state_labels))
-    levels_renamed <- vapply(levels, function(x) paste("C-", x, sep=""), "")
-    
-    if(is.null(cmap)) {
-      getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-      cmap <- getPalette(max(state_labels))
-      if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-      cmap <- sample(cmap)
+    saved_palette <- palette()
+    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+    if(cell_model == 'monocle2') {
+        monocle_obj <- monocleInfo(obj)
+        cell_embedding <- reducedDimS(monocle_obj)
+        mydata <- pooledCells(obj)
+        
+        # Extract state labels from monocle data object
+        labels <- pData(phenoData(monocle_obj))
+        state_labels <- as.numeric(labels$State)
+        
+        levels <- levels(factor(state_labels))
+        levels_renamed <- vapply(levels, function(x) paste("C-", x, sep=""), "")
+        
+        if(is.null(cmap)) {
+            getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+            cmap <- getPalette(max(state_labels))
+            if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+            cmap <- sample(cmap)
+        }
+        palette(cmap)
+        
+        cell_embedding_t <- as.data.frame(t(cell_embedding))
+        # visualize traj colored by state
+        myplot_state <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
+        geom_point(size=0.4) +
+        scale_color_manual(labels = levels_renamed,
+        values = cmap) +
+        guides(colour = guide_legend(override.aes = list(size=2))) +
+        labs(x="", y = "", color = "Cell subtype") +
+        theme_classic() +
+        theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.line = element_line(colour = "black",
+        size = 1, linetype = "solid"))
+        
+        # visualize traj colored by pseudotime
+        ncolor <- 9
+        palette(brewer.pal(ncolor, "Blues"))
+        
+        col.labels <- labels$Pseudotime
+        
+        # visualize traj colored by pseudotime
+        myplot_pt <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=col.labels)) +
+        geom_point(size=0.4) +
+        labs(x="", y = "", color = "Pseudotime") +
+        theme_classic() +
+        theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        axis.line = element_line(colour = "black",
+        size = 1, linetype = "solid"))
+        
+        print(plot_grid(myplot_state, myplot_pt, ncol=2))
+        return(cmap)
+    } else if(cell_model == 'seurat') {
+        seurat_obj <- seuratInfo(obj)
+        
+        if(!'tsne' %in% names(seurat_obj@dr)) {
+            print('Running t-SNE...')
+            if(is.null(ndims)) ndims <- 10
+            seurat_obj <- RunTSNE(seurat_obj, reduction.use="cca.aligned", dims.use=seq_len(ndims))
+        }
+        
+        # define color map
+        if(is.null(cmap)) {
+            getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+            cmap <- getPalette(max(as.numeric(seurat_obj@ident)))
+            if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+            cmap <- sample(cmap)
+        }
+        
+        TSNEPlot(seurat_obj, do.label=FALSE, pt.size=pt_sz, colors.use=cmap)
+        
+    } else {
+        stop('Error: cell_model must be either "monocle2" or "seurat"')
     }
-    palette(cmap)
-    
-    cell_embedding_t <- as.data.frame(t(cell_embedding))
-    # visualize traj colored by state
-    myplot_state <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
-      geom_point(size=0.4) +
-      scale_color_manual(labels = levels_renamed,
-                         values = cmap) +
-      guides(colour = guide_legend(override.aes = list(size=2))) +
-      labs(x="", y = "", color = "Cell subtype") +
-      theme_classic() +
-      theme(axis.title.x=element_blank(),
-            axis.text.x=element_blank(),
-            axis.ticks.x=element_blank(),
-            axis.title.y=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks.y=element_blank(),
-            axis.line = element_line(colour = "black",
-                                     size = 1, linetype = "solid"))
-    
-    # visualize traj colored by pseudotime
-    ncolor <- 9
-    palette(brewer.pal(ncolor, "Blues"))
-    
-    col.labels <- labels$Pseudotime
-    
-    # visualize traj colored by pseudotime
-    myplot_pt <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=col.labels)) +
-      geom_point(size=0.4) +
-      labs(x="", y = "", color = "Pseudotime") +
-      theme_classic() +
-      theme(axis.title.x=element_blank(),
-            axis.text.x=element_blank(),
-            axis.ticks.x=element_blank(),
-            axis.title.y=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks.y=element_blank(),
-            axis.line = element_line(colour = "black",
-                                     size = 1, linetype = "solid"))
-    
-    print(plot_grid(myplot_state, myplot_pt, ncol=2))
+    palette(saved_palette)
     return(cmap)
-  } else if(cell_model == 'seurat') {
-    seurat_obj <- seuratInfo(obj)
-    
-    if(!'tsne' %in% names(seurat_obj@dr)) {
-      print('Running t-SNE...')
-      if(is.null(ndims)) ndims <- 10
-      seurat_obj <- RunTSNE(seurat_obj, reduction.use="cca.aligned", dims.use=seq_len(ndims))
-    }
-    
-    # define color map
-    if(is.null(cmap)) {
-      getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-      cmap <- getPalette(max(as.numeric(seurat_obj@ident)))
-      if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-      cmap <- sample(cmap)
-    }
-    
-    TSNEPlot(seurat_obj, do.label=FALSE, pt.size=pt_sz, colors.use=cmap)
-    
-  } else {
-    stop('Error: cell_model must be either "monocle2" or "seurat"')
-  }
-  return(cmap)
 }
 
 #' @title Plot heatmap of cell subtypes
@@ -114,143 +116,143 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
 #' @param ... Additional parameters to be passed on to pheatmap function
 #' @return Heatmap containing expression values for each cell subtype. If cell_model is 'seurat', then returns a list of heatmaps (1 for each batch) that may be subsequently plotted individually
 #' @examples
-#' 
+#'
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 #' my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes)
-#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', 
+#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff',
 #' pseudo_expr=0, sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')
-#' 
+#'
 plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5, ...) {
-  cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-  if(cell_model == 'monocle2') {
-    # retrieve reference clusters
-    ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
-    selected_clusters <- seq_len(length(ref_clusters))
-    myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
-    for(i in selected_clusters) {
-      cur_cluster <- ref_clusters[[i]]
-      if(!is.null(cur_cluster)) { #at least 1 cell
-        if(nrow(cur_cluster) > 1) {
-          myheatmap[i,] <- colMeans(cur_cluster)
-        } else {
-          myheatmap[i,] <- cur_cluster #only 1 cell
+    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+    if(cell_model == 'monocle2') {
+        # retrieve reference clusters
+        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
+        selected_clusters <- seq_len(length(ref_clusters))
+        myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
+        for(i in selected_clusters) {
+            cur_cluster <- ref_clusters[[i]]
+            if(!is.null(cur_cluster)) { #at least 1 cell
+                if(nrow(cur_cluster) > 1) {
+                    myheatmap[i,] <- colMeans(cur_cluster)
+                } else {
+                    myheatmap[i,] <- cur_cluster #only 1 cell
+                }
+            }
         }
-      } 
-    }
-    
-    selected_clusters_renamed <- vapply(names(ref_clusters), function(x) paste("C-", x, sep=""), "")
-    
-    rownames(myheatmap) <- selected_clusters_renamed
-    colnames(myheatmap) <- selectMarkers(obj)
-    
-    if(!is.null(selected_genes)) {
-      col_tokeep <- match(selected_genes, selectMarkers(obj))
-      if(sum(is.na(col_tokeep)) > 0) {
-        genes_not_found <- ''
-        missing_idx <- which(is.na(col_tokeep))
-        for(i in seq_len(length(missing_idx))) {
-          if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
-          else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
+        
+        selected_clusters_renamed <- vapply(names(ref_clusters), function(x) paste("C-", x, sep=""), "")
+        
+        rownames(myheatmap) <- selected_clusters_renamed
+        colnames(myheatmap) <- selectMarkers(obj)
+        
+        if(!is.null(selected_genes)) {
+            col_tokeep <- match(selected_genes, selectMarkers(obj))
+            if(sum(is.na(col_tokeep)) > 0) {
+                genes_not_found <- ''
+                missing_idx <- which(is.na(col_tokeep))
+                for(i in seq_len(length(missing_idx))) {
+                    if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
+                    else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
+                }
+                print(sprintf("Genes not found: %s", genes_not_found, sep=""))
+            }
+            col_tokeep <- col_tokeep[!is.na(col_tokeep)]
+            myheatmap <- myheatmap[,col_tokeep]
         }
-        print(sprintf("Genes not found: %s", genes_not_found, sep=""))
-      }
-      col_tokeep <- col_tokeep[!is.na(col_tokeep)]
-      myheatmap <- myheatmap[,col_tokeep]
-    }
-    
-    myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
-    
-    myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
-    
-    pheatmap(myheatmap2,
-             cluster_rows=FALSE,
-             cluster_cols=TRUE,
-             border_color=NA,
-             show_colnames=TRUE,
-             show_rownames=TRUE,
-             fontsize_col=8,
-             fontsize_row=12,
-             cellwidth=10,
-             width=w,
-             height=h,
-             ...
-    )
-    return(myheatmap2)
-  } else if(cell_model == 'seurat') {
-    seurat_obj <- seuratInfo(obj)
-    state_labels <- as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))
-    names(state_labels) <- rownames(seurat_obj@meta.data)
-    ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='raw.data')))
-    
-    batches <- unique(batchIDs(obj))
-    myheatmaps_all <- list()
-    for(batch_id in batches) {
-      cell_idx_curplt <- which(seurat_obj@meta.data$plt == batch_id)
-      if(length(cell_idx_curplt) == 0) {
-        stop(sprintf('Error: no cells in reference set match the experiment_id %s. Please check batchIDs(phemdObj).', batch_id))
-      }
-      cur_ref_data <- ref_data[cell_idx_curplt,]
-      cur_state_labels <- state_labels[cell_idx_curplt]
-      
-      myheatmap <- matrix(0, nrow=max(state_labels), ncol=ncol(cur_ref_data))
-      for(i in seq_len(max(state_labels))) {
-        cur_idx <- which(cur_state_labels == i)
-        cur_cluster <- cur_ref_data[cur_idx,]
-        if(length(cur_idx) > 1) myheatmap[i,] <- colMeans(cur_cluster)
-        if(length(cur_idx) == 1) myheatmap[i,] <- cur_cluster
-      }
-      
-      selected_clusters_renamed <- vapply(seq_len(max(state_labels)), function(x) paste("C-", x, sep=""), "")
-      
-      rownames(myheatmap) <- selected_clusters_renamed
-      colnames(myheatmap) <- selectMarkers(obj)
-      
-      if(!is.null(selected_genes)) {
-        col_tokeep <- match(selected_genes, selectMarkers(obj))
-        if(sum(is.na(col_tokeep)) > 0) {
-          genes_not_found <- ''
-          missing_idx <- which(is.na(col_tokeep))
-          for(i in seq_len(length(missing_idx))) {
-            if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
-            else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
-          }
-          print(sprintf("Genes not found: %s", genes_not_found, sep=""))
+        
+        myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
+        
+        myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
+        
+        pheatmap(myheatmap2,
+        cluster_rows=FALSE,
+        cluster_cols=TRUE,
+        border_color=NA,
+        show_colnames=TRUE,
+        show_rownames=TRUE,
+        fontsize_col=8,
+        fontsize_row=12,
+        cellwidth=10,
+        width=w,
+        height=h,
+        ...
+        )
+        return(myheatmap2)
+    } else if(cell_model == 'seurat') {
+        seurat_obj <- seuratInfo(obj)
+        state_labels <- as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))
+        names(state_labels) <- rownames(seurat_obj@meta.data)
+        ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='raw.data')))
+        
+        batches <- unique(batchIDs(obj))
+        myheatmaps_all <- list()
+        for(batch_id in batches) {
+            cell_idx_curplt <- which(seurat_obj@meta.data$plt == batch_id)
+            if(length(cell_idx_curplt) == 0) {
+                stop(sprintf('Error: no cells in reference set match the experiment_id %s. Please check batchIDs(phemdObj).', batch_id))
+            }
+            cur_ref_data <- ref_data[cell_idx_curplt,]
+            cur_state_labels <- state_labels[cell_idx_curplt]
+            
+            myheatmap <- matrix(0, nrow=max(state_labels), ncol=ncol(cur_ref_data))
+            for(i in seq_len(max(state_labels))) {
+                cur_idx <- which(cur_state_labels == i)
+                cur_cluster <- cur_ref_data[cur_idx,]
+                if(length(cur_idx) > 1) myheatmap[i,] <- colMeans(cur_cluster)
+                if(length(cur_idx) == 1) myheatmap[i,] <- cur_cluster
+            }
+            
+            selected_clusters_renamed <- vapply(seq_len(max(state_labels)), function(x) paste("C-", x, sep=""), "")
+            
+            rownames(myheatmap) <- selected_clusters_renamed
+            colnames(myheatmap) <- selectMarkers(obj)
+            
+            if(!is.null(selected_genes)) {
+                col_tokeep <- match(selected_genes, selectMarkers(obj))
+                if(sum(is.na(col_tokeep)) > 0) {
+                    genes_not_found <- ''
+                    missing_idx <- which(is.na(col_tokeep))
+                    for(i in seq_len(length(missing_idx))) {
+                        if(i == 1) genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep='')
+                        else genes_not_found <- paste(genes_not_found, selected_genes[missing_idx[i]], sep=', ')
+                    }
+                    print(sprintf("Genes not found: %s", genes_not_found, sep=""))
+                }
+                col_tokeep <- col_tokeep[!is.na(col_tokeep)]
+                myheatmap <- myheatmap[,col_tokeep]
+            }
+            
+            myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
+            
+            myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
+            myheatmaps_all[[batch_id]] <- myheatmap2
         }
-        col_tokeep <- col_tokeep[!is.na(col_tokeep)]
-        myheatmap <- myheatmap[,col_tokeep]
-      }
-      
-      myheatmap[is.nan(myheatmap)] <- 0 #this in the event of empty clusters
-      
-      myheatmap2 <- log2(myheatmap - min(myheatmap) + 1)
-      myheatmaps_all[[batch_id]] <- myheatmap2
+        
+        for(i in seq_len(length(myheatmaps_all))) {
+            if(!exists('myheatmaps_avg')) myheatmaps_avg <- myheatmaps_all[[i]]
+            else myheatmaps_avg <- myheatmaps_avg + myheatmaps_all[[i]]
+        }
+        myheatmaps_avg <- myheatmaps_avg / length(myheatmaps_all)
+        pheatmap(myheatmaps_avg,
+        cluster_rows=TRUE,
+        cluster_cols=FALSE,
+        border_color=NA,
+        show_colnames=TRUE,
+        show_rownames=TRUE,
+        fontsize_col=8,
+        fontsize_row=12,
+        cellwidth=10,
+        width=w,
+        height=h,
+        ...)
+        return(myheatmaps_all)
+    } else {
+        stop('Error: cell_model must be either "monocle2" or "seurat"')
     }
-    
-    for(i in seq_len(length(myheatmaps_all))) {
-      if(!exists('myheatmaps_avg')) myheatmaps_avg <- myheatmaps_all[[i]]
-      else myheatmaps_avg <- myheatmaps_avg + myheatmaps_all[[i]]
-    }
-    myheatmaps_avg <- myheatmaps_avg / length(myheatmaps_all)
-    pheatmap(myheatmaps_avg,
-             cluster_rows=TRUE,
-             cluster_cols=FALSE,
-             border_color=NA,
-             show_colnames=TRUE,
-             show_rownames=TRUE,
-             fontsize_col=8,
-             fontsize_row=12,
-             cellwidth=10,
-             width=w,
-             height=h,
-             ...)
-    return(myheatmaps_all)
-  } else {
-    stop('Error: cell_model must be either "monocle2" or "seurat"')
-  }
 }
 
 
@@ -264,13 +266,13 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
 #' @examples
 #' #Not to be called directly
 drawColnames45 <- function(coln, gaps, ...) {
-  coord <- pheatmap:::find_coordinates(length(coln), gaps)
-  x     <- coord$coord - 0.5 * coord$size
-  res   <- grid::textGrob(
+    coord <- pheatmap:::find_coordinates(length(coln), gaps)
+    x     <- coord$coord - 0.5 * coord$size
+    res   <- grid::textGrob(
     coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"),
     vjust = 0.75, hjust = 1, rot = 45, gp = grid::gpar(...)
-  )
-  return(res)
+    )
+    return(res)
 }
 
 
@@ -291,7 +293,7 @@ drawColnames45 <- function(coln, gaps, ...) {
 #' @param ... Additional parameters to be passed to \code{DiffusionMap} function
 #' @return DiffusionMap object containing biological sample embedding and associated metadata
 #' @examples
-#' 
+#'
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -303,56 +305,56 @@ drawColnames45 <- function(coln, gaps, ...) {
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, pt_sz=2)
-#' 
+#'
 plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5, scale.y=1, angle=40, autosave=FALSE, ...) {
-  extra_args <- list(...)
-  if(nrow(my_distmat) != ncol(my_distmat)) {
-    stop('Error: my_distmat must be a square distance matrix')
-  }
-  if(nrow(my_distmat) != length(cluster_assignments)) {
-    stop('Error: cluster_assignments must be the same length as the number of rows in my_distmat')
-  }
-  if(is.null(cmap)) {
-    getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-    cmap <- getPalette(max(c(cluster_assignments),3)) # min palette size = 3
-    if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-  }
-  if(length(cmap) > 1) palette(cmap)
-  
-  # Plot inhibitor groups using diffusion map
-  covars <- data.frame(covar1 = seq_len(nrow(my_distmat)))
-  if(nrow(my_distmat) < 30) {
-    extra_args['n_local'] <- 3
-  }
-  
-  dm_args <- c(list(data=covars, distance = as.dist(my_distmat)),
-               extra_args[names(extra_args) %in% c("n_local", "density_norm", "rotate", "k", "sigma", "verbose")])
-  dm <- do.call(DiffusionMap, dm_args)
-  
-  
-  cluster_assignments_named <- vapply(cluster_assignments, function(x) intToUtf8(64+x), "")
-  if(n_dim >= 3) {
-    
-    plot(dm, c(1,2,3), pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=TRUE, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
-    
-  } else {
-    plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
-  }
-  
-  if(!is.null(pt_label)) {
-    cluster_assignments_named <- vapply(cluster_assignments, function(x) paste("G-", x, sep=""), "")
-    if(n_dim >= 3) {
-      s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20)
-      s3d.coords <- s3d$xyz.convert(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3])
-      text(s3d.coords$x, s3d.coords$y,             # x and y coordinates
-           labels=pt_label,               # text to plot
-           cex=.3, pos=2)
-    } else {
-      plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
-      text(eigenvectors(dm)[,c(1,2)],labels = pt_label, pos = 2, cex=0.4)
+    extra_args <- list(...)
+    if(nrow(my_distmat) != ncol(my_distmat)) {
+        stop('Error: my_distmat must be a square distance matrix')
     }
-  }
-  return(dm)
+    if(nrow(my_distmat) != length(cluster_assignments)) {
+        stop('Error: cluster_assignments must be the same length as the number of rows in my_distmat')
+    }
+    if(is.null(cmap)) {
+        getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+        cmap <- getPalette(max(c(cluster_assignments),3)) # min palette size = 3
+        if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+    }
+    if(length(cmap) > 1) palette(cmap)
+    
+    # Plot inhibitor groups using diffusion map
+    covars <- data.frame(covar1 = seq_len(nrow(my_distmat)))
+    if(nrow(my_distmat) < 30) {
+        extra_args['n_local'] <- 3
+    }
+    
+    dm_args <- c(list(data=covars, distance = as.dist(my_distmat)),
+    extra_args[names(extra_args) %in% c("n_local", "density_norm", "rotate", "k", "sigma", "verbose")])
+    dm <- do.call(DiffusionMap, dm_args)
+    
+    
+    cluster_assignments_named <- vapply(cluster_assignments, function(x) intToUtf8(64+x), "")
+    if(n_dim >= 3) {
+        
+        plot(dm, c(1,2,3), pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=TRUE, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
+        
+    } else {
+        plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
+    }
+    
+    if(!is.null(pt_label)) {
+        cluster_assignments_named <- vapply(cluster_assignments, function(x) paste("G-", x, sep=""), "")
+        if(n_dim >= 3) {
+            s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20)
+            s3d.coords <- s3d$xyz.convert(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3])
+            text(s3d.coords$x, s3d.coords$y,             # x and y coordinates
+            labels=pt_label,               # text to plot
+            cex=.3, pos=2)
+        } else {
+            plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
+            text(eigenvectors(dm)[,c(1,2)],labels = pt_label, pos = 2, cex=0.4)
+        }
+    }
+    return(dm)
 }
 
 #' @title Plots cell subtype frequency histograms summarizing each group of samples
@@ -379,49 +381,49 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_d
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, '.', pt_sz=2, pt_label = sNames(my_phemdObj_final))
 #' plotSummaryHistograms(my_phemdObj_final, cluster_assignments, cell_model='monocle2)
-#' 
+#'
 plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('monocle2','seurat'), cmap=NULL, ncol.plot=4, ax.lab.sz=2.5, title.sz=3) {
-  cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-  if(cell_model == 'monocle2') {
-    monocle_obj <- monocleInfo(myobj)
-    labels <- pData(phenoData(monocle_obj))
-    state_labels <- as.numeric(labels$State)
-    
-  } else if(cell_model == 'seurat') {
-    seurat_obj <- seuratInfo(myobj)
-    state_labels <- as.numeric(GetIdent(seurat_obj, uniq=FALSE))
-    
-  } else {
-    stop('Error: cell_model must be either "monocle2" or "seurat"')
-  }
-  
-  
-  cluster_weights <- celltypeFreqs(myobj)
-  
-  if(is.null(cmap)) {
-    getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-    cmap <- getPalette(max(state_labels))
-  }
-  
-  proto_inhibs <- matrix(0, max(cluster_assignments), ncol(cluster_weights))
-  for(i in seq_len(max(cluster_assignments))) {
-    if(sum(cluster_assignments == i) == 1) {
-      proto_inhibs[i,] <- cluster_weights[which(cluster_assignments == i),]
+    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+    if(cell_model == 'monocle2') {
+        monocle_obj <- monocleInfo(myobj)
+        labels <- pData(phenoData(monocle_obj))
+        state_labels <- as.numeric(labels$State)
+        
+    } else if(cell_model == 'seurat') {
+        seurat_obj <- seuratInfo(myobj)
+        state_labels <- as.numeric(GetIdent(seurat_obj, uniq=FALSE))
+        
     } else {
-      proto_inhibs[i,] <- colMeans(cluster_weights[which(cluster_assignments == i),])
+        stop('Error: cell_model must be either "monocle2" or "seurat"')
     }
-  }
-  
-  nrow.plot <- ceiling(max(cluster_assignments) / ncol.plot)
-  par(mfrow=c(nrow.plot,ncol.plot))
-  for(i in seq_len(max(cluster_assignments))) {
-    if(max(proto_inhibs[i,]) > 0.4) ymax <- max(proto_inhibs[i,])+0.1 
-    else ymax <- 0.4
-    barplot(proto_inhibs[i,], col=cmap, main='', xlab='', ylab = "Frequency (%)", ylim = c(0, ymax), cex.axis=1.5, cex.names = 2, cex.lab = ax.lab.sz, names.arg = seq_len(ncol(proto_inhibs)))
     
-    title(xlab="Cell subtype", line=3.5, cex.lab=ax.lab.sz)
-    title(main=sprintf("Group %s", intToUtf8(64+i)), line=0, cex.main=title.sz)
-  }
+    
+    cluster_weights <- celltypeFreqs(myobj)
+    
+    if(is.null(cmap)) {
+        getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+        cmap <- getPalette(max(state_labels))
+    }
+    
+    proto_inhibs <- matrix(0, max(cluster_assignments), ncol(cluster_weights))
+    for(i in seq_len(max(cluster_assignments))) {
+        if(sum(cluster_assignments == i) == 1) {
+            proto_inhibs[i,] <- cluster_weights[which(cluster_assignments == i),]
+        } else {
+            proto_inhibs[i,] <- colMeans(cluster_weights[which(cluster_assignments == i),])
+        }
+    }
+    
+    nrow.plot <- ceiling(max(cluster_assignments) / ncol.plot)
+    par(mfrow=c(nrow.plot,ncol.plot))
+    for(i in seq_len(max(cluster_assignments))) {
+        if(max(proto_inhibs[i,]) > 0.4) ymax <- max(proto_inhibs[i,])+0.1
+        else ymax <- 0.4
+        barplot(proto_inhibs[i,], col=cmap, main='', xlab='', ylab = "Frequency (%)", ylim = c(0, ymax), cex.axis=1.5, cex.names = 2, cex.lab = ax.lab.sz, names.arg = seq_len(ncol(proto_inhibs)))
+        
+        title(xlab="Cell subtype", line=3.5, cex.lab=ax.lab.sz)
+        title(main=sprintf("Group %s", intToUtf8(64+i)), line=0, cex.main=title.sz)
+    }
 }
 
 #' @title Plot cell yield of each sample as bar plot
@@ -434,7 +436,7 @@ plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('mono
 #' @param h Height of plot in inches
 #' @return None
 #' @examples
-#' 
+#'
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
@@ -445,35 +447,35 @@ plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('mono
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' plotCellYield(my_phemdObj_final, labels=cluster_assignments, font_sz = 0.8)
-#' 
+#'
 plotCellYield <- function(myobj, labels=NULL, cmap=NULL, font_sz = 0.6, w=8, h=9.5) {
-  nsample <- length(rawExpn(myobj))
-  cell_yield <- vapply(rawExpn(myobj), nrow, integer(1L))
-  
-  order_idx <- order(cell_yield, decreasing=FALSE)
-  cell_yield_ordered <- cell_yield[order_idx]
-  snames_ordered <- sNames(myobj)[order_idx]
-  
-  
-  par(mar=c(6,6,2,2))
-  
-  if(!is.null(labels)) {
-    if(length(labels) != nsample) {
-      stop('Error: length of "labels" vector must be equal to length of rawExpn(myobj)')
+    nsample <- length(rawExpn(myobj))
+    cell_yield <- vapply(rawExpn(myobj), nrow, integer(1L))
+    
+    order_idx <- order(cell_yield, decreasing=FALSE)
+    cell_yield_ordered <- cell_yield[order_idx]
+    snames_ordered <- sNames(myobj)[order_idx]
+    
+    
+    par(mar=c(6,6,2,2))
+    
+    if(!is.null(labels)) {
+        if(length(labels) != nsample) {
+            stop('Error: length of "labels" vector must be equal to length of rawExpn(myobj)')
+        }
+        labels_ordered <- labels[order_idx]
+        if(is.null(cmap)) {
+            getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+            cmap <- getPalette(max(labels))
+            if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+        }
+        color_vec <- cmap[labels_ordered]
+        xx <- barplot(cell_yield_ordered, main='', horiz=TRUE, names.arg=snames_ordered, las=1, cex.names=font_sz, col=color_vec)
+    }  else {
+        xx <- barplot(cell_yield_ordered, main='', horiz=TRUE, names.arg=snames_ordered, las=1, cex.names=font_sz, col='blue')
     }
-    labels_ordered <- labels[order_idx]
-    if(is.null(cmap)) {
-      getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-      cmap <- getPalette(max(labels))
-      if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-    }
-    color_vec <- cmap[labels_ordered]
-    xx <- barplot(cell_yield_ordered, main='', horiz=TRUE, names.arg=snames_ordered, las=1, cex.names=font_sz, col=color_vec)
-  }  else {
-    xx <- barplot(cell_yield_ordered, main='', horiz=TRUE, names.arg=snames_ordered, las=1, cex.names=font_sz, col='blue')
-  }
-  title(xlab="Cell yield (number of cells)", line=3, cex.lab=1.5)
-
+    title(xlab="Cell yield (number of cells)", line=3, cex.lab=1.5)
+    
 }
 
 
