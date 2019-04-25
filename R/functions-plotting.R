@@ -130,7 +130,7 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
     cell_model <- match.arg(cell_model, c('monocle2','seurat'))
     if(cell_model == 'monocle2') {
         # retrieve reference clusters
-        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2')
+        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type='raw')
         selected_clusters <- seq_len(length(ref_clusters))
         myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
         for(i in selected_clusters) {
