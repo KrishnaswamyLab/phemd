@@ -137,8 +137,6 @@ assignments for each cell in the aggregated data matrix (stored in
 We can visualize the embedding by writing them to file in this way:
 
 ```{r echo=T, results = 'hide', fig.width=8, fig.height=4}
-savedest <- './example_output/'
-dir.create(savedest, showWarnings = FALSE) # create folder for output
 cmap <- plotEmbeddings(myobj, cell_model='monocle2')
 ```
 
@@ -196,10 +194,8 @@ celltypeFreqs(myobj)). We can use this distance matrix to identify similar
 groups of samples as such:
 
 ```{r echo=T, results = 'hide'}
-## Identify similar groups of inhibitors (hierarchical clustering for now)
+## Identify similar groups of inhibitors
 group_assignments <- groupSamples(my_distmat, distfun = 'hclust', ncluster=5)
-# Write inhibitor groups to file
-printClusterAssignments(group_assignments, myobj, savedest)
 ```
 
 ## 5. Visualize single-cell samples based on PhEMD-based similarity
@@ -225,7 +221,7 @@ as desired.
 
 ```{r echo=T, results = 'hide'}
 # Plot cell subtype distribution (histogram) for each sample
-getSampleHistsByCluster(myobj, group_assignments, cell_model='monocle2')
+sample.cellfreqs <- getSampleHistsByCluster(myobj, group_assignments, cell_model='monocle2')
 ```
 
 To plot cell subtype histograms summarizing groups of similar samples (bin-wise
