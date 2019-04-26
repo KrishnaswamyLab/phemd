@@ -25,7 +25,7 @@
 setClassUnion("CDSorNULL",members=c('CellDataSet', "NULL"))
 
 setClass("Phemd",
-         contains=c('CellDataSet', 'seurat'),
+         contains=c('CellDataSet', 'Seurat'),
          slots=c(data = "list",
                  markers = "character",
                  snames = "character",
@@ -35,7 +35,7 @@ setClass("Phemd",
                  monocle_obj = "CDSorNULL",
                  data_cluster_weights = "matrix",
                  emd_dist_mat = "matrix",
-                 seurat_obj = "seurat",
+                 seurat_obj = "Seurat",
                  experiment_ids = "character"))
 
 ###########################
