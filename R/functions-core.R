@@ -388,8 +388,7 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
     if(sum(nmarker_vec - nmarker_vec[1]) != 0) {
         stop(sprintf("Error: Sample %d has a different number of columns than Sample 1", which(nmarker_vec-nmarker_vec[1] != 0)))
     }
-    data_obj <- new('Phemd', data = all_data, markers = markers, snames = snames, monocle_obj=NULL)
-    
+    data_obj <- new('Phemd', data = all_data, markers = markers, snames = snames, monocle_obj=NULL, seurat_obj=NULL, version=packageVersion(pkg = 'Seurat'))
     return(data_obj)
 }
 
@@ -409,13 +408,13 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
 #' my_phemdObj <- bindSeuratObj(my_phemdObj, my_seuratObj)
 #'
 bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
-    stopifnot(is(seurat_obj,'seurat'))
+    stopifnot(is(seurat_obj,'Seurat'))
     # ensure cluster names are 1-indexed
-    if(min(as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))) == 0) {
-        label_names <- names(GetIdent(seurat_obj, uniq=FALSE))
-        labels_renumbered <- factor(as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE))) +1)
-        names(labels_renumbered) <- label_names
-        seurat_obj <- SetIdent(object=seurat_obj, ident.use=labels_renumbered)
+    if(min(as.numeric(as.character(Idents(seurat_obj)))) == 0) {
+        label_names <- levels(Idents(seurat_obj))
+        labels_renumbered <- factor(as.numeric(as.character(Idents(seurat_obj))) +1)
+        levels(labels_renumbered) <- label_names
+        Idents(seurat_obj) <- labels_renumbered
     }
     if(batch.colname != 'plt') {
         seurat_obj@meta.data$plt <- seurat_obj@meta.data[[batch.colname]]

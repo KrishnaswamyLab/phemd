@@ -20,10 +20,10 @@
 #' @rdname Phemd
 #' @aliases Phemd-class
 #' @exportClass Phemd
-#' @importClassesFrom Seurat seurat
+#' @importClassesFrom Seurat Seurat
 
 setClassUnion("CDSorNULL",members=c('CellDataSet', "NULL"))
-
+setClassUnion("SeuratorNULL",members=c('Seurat', "NULL"))
 setClass("Phemd",
          contains=c('CellDataSet', 'Seurat'),
          slots=c(data = "list",
@@ -35,8 +35,9 @@ setClass("Phemd",
                  monocle_obj = "CDSorNULL",
                  data_cluster_weights = "matrix",
                  emd_dist_mat = "matrix",
-                 seurat_obj = "Seurat",
-                 experiment_ids = "character"))
+                 seurat_obj = "SeuratorNULL",
+                 experiment_ids = "character", 
+                 version='package_version'))
 
 ###########################
 # Methods for Phemd class
