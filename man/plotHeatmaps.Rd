@@ -35,7 +35,7 @@ my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data)
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
 my_phemdObj_lg <- selectFeatures(my_phemdObj_lg, selected_genes)
-my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', 
+my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff',
 pseudo_expr=0, sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')

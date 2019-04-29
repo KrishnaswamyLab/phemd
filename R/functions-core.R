@@ -53,15 +53,16 @@ expn_type='aligned', ndim=10) {
         
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(obj)
-        state_labels <- as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))
+        state_labels <- as.numeric(as.character(Idents(seurat_obj)))
         if(min(state_labels) == 0) state_labels <- state_labels + 1 #ensure cluster labels are 1 indexed instead of zero indexed
-        names(state_labels) <- names(GetIdent(seurat_obj, uniq=FALSE)) # label cluster assignments with cell name
+        names(state_labels) <- names(Idents(seurat_obj)) # label cluster assignments with cell name
         if(expn_type == 'aligned') {
             # aligned CCA expression data (num_cells x num_markers)
-            mydata <- GetDimReduction(object = seurat_obj, reduction.type = 'cca.aligned',
-            slot = "cell.embeddings")[,seq_len(ndim)]
-        } else if(expn_type == 'raw') {
-            mydata <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='raw.data')))
+            mydata <- Embeddings(object = seurat_obj, reduction = 'cca.aligned')[,seq_len(ndim)]
+        } else if(expn_type == 'pca') {
+            mydata <- Embeddings(object = seurat_obj, reduction = 'pca')[,seq_len(ndim)]
+        }else if(expn_type == 'raw') {
+            mydata <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
         } else {
             stop('Error: expn_type must be either "raw" or "aligned"')
         }
@@ -400,20 +401,23 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
 #' @param batch.colname Name of column in Seurat object that denotes batch ID
 #' @return 'Phemd' object containing with attached Seurat object
 #' @examples
+#' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
+#' my_seuratObj <- Seurat::FindVariableFeatures(object = my_seuratObj)
 #' my_seuratObj <- Seurat::ScaleData(object = my_seuratObj, do.scale=FALSE, do.center=FALSE)
 #' my_seuratObj <- Seurat::RunPCA(object = my_seuratObj, pc.genes = colnames(all_expn_data[[1]]), do.print = FALSE)
-#' my_seuratObj <- Seurat::FindClusters(my_seuratObj, reduction.type = "pca", dims.use = 1:10, resolution = 0.6, print.output = 0, save.SNN = TRUE)
+#' my_seuratObj <- Seurat::FindNeighbors(my_seuratObj, reduction = "pca", dims.use = 1:10)
+#' my_seuratObj <- Seurat::FindClusters(my_seuratObj, resolution = 0.6, print.output = 0, save.SNN = TRUE)
 #' my_phemdObj <- bindSeuratObj(my_phemdObj, my_seuratObj)
-#'
+#' 
 bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
     stopifnot(is(seurat_obj,'Seurat'))
     # ensure cluster names are 1-indexed
     if(min(as.numeric(as.character(Idents(seurat_obj)))) == 0) {
         label_names <- levels(Idents(seurat_obj))
         labels_renumbered <- factor(as.numeric(as.character(Idents(seurat_obj))) +1)
-        levels(labels_renumbered) <- label_names
+        #levels(labels_renumbered) <- label_names
         Idents(seurat_obj) <- labels_renumbered
     }
     if(batch.colname != 'plt') {
@@ -755,9 +759,9 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
             }
             
             cur_hist <- rep(0, nclusters)
-            state_labels <- as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))
+            state_labels <- as.numeric(as.character(Idents(seurat_obj)))
             names(state_labels) <- rownames(seurat_obj@meta.data)
-            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='raw.data')))
+            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
             cell_idx_curplt <- which(seurat_obj@meta.data$plt == cur_plt)
             if(length(cell_idx_curplt) == 0) {
                 stop(sprintf('Error: no cells in reference set match the experiment_id %s of sample %d', cur_plt, i))
@@ -792,6 +796,7 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Requires 'igraph' package
 #' @param obj 'Phemd' object containing Monocle2 object (already embedded and ordered) in @@monocle_obj slot
 #' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
+#' @param expn_type Data type to use to determine cell-type dissimilarities
 #' @return Phemd object with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
 #'
@@ -803,14 +808,14 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 #' my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #'
-generateGDM <- function(obj, cell_model=c('monocle2', 'seurat')) {
+generateGDM <- function(obj, cell_model=c('monocle2', 'seurat'), expn_type='aligned') {
     stopifnot(is(obj,'Phemd'))
     
     cell_model <- match.arg(cell_model, c('monocle2','seurat'))
     if(cell_model == 'monocle2') {
         monocle_obj <- monocleInfo(obj)
         # retrieve reference clusters
-        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type='aligned')
+        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type=expn_type)
         nclusters <- length(ref_clusters)
         
         # get graph underlying Monocle tree
@@ -829,7 +834,7 @@ generateGDM <- function(obj, cell_model=c('monocle2', 'seurat')) {
         }
         GDM(obj) <- emd_dists
     } else if(cell_model == 'seurat') {
-        ref_clusters <- retrieveRefClusters(obj, cell_model='seurat', expn_type='aligned', ndim=8)
+        ref_clusters <- retrieveRefClusters(obj, cell_model='seurat', expn_type=expn_type, ndim=8)
         seurat_obj <- seuratInfo(obj)
         centroids <- getArithmeticCentroids(ref_clusters)
         GDM(obj) <- as.matrix(dist(centroids))

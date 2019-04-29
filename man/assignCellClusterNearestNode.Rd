@@ -27,7 +27,7 @@ Private method (not exported in namespace). Uses RANN package for fast knn searc
 }
 \examples{
 \dontrun{
-cur_cells_cluster_labels <- assignCellClusterNearestNode(cur_cells_expn_data, 
+cur_cells_cluster_labels <- assignCellClusterNearestNode(cur_cells_expn_data,
 clustered_cells_expn_data, clustered_cells_cluster_labels, cell_model='monocle2')
 }
 }

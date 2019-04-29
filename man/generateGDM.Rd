@@ -4,12 +4,15 @@
 \alias{generateGDM}
 \title{Computes ground distance matrix based on cell embedding}
 \usage{
-generateGDM(obj, cell_model = c("monocle2", "seurat"))
+generateGDM(obj, cell_model = c("monocle2", "seurat"),
+  expn_type = "aligned")
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle2 object (already embedded and ordered) in @monocle_obj slot}
 
 \item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
+
+\item{expn_type}{Data type to use to determine cell-type dissimilarities}
 }
 \value{
 Phemd object with ground distance matrix (to be used in EMD computation) in @data_cluster_weights slot

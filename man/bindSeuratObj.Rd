@@ -20,6 +20,7 @@ bindSeuratObj(phemd_obj, seurat_obj, batch.colname = "plt")
 Allows user to attach batch-normalized reference cell data from Seurat into 'Phemd' object containing raw expression data and metadata
 }
 \examples{
+
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 my_seuratObj <- Seurat::FindVariableFeatures(object = my_seuratObj)
@@ -28,4 +29,5 @@ my_seuratObj <- Seurat::RunPCA(object = my_seuratObj, pc.genes = colnames(all_ex
 my_seuratObj <- Seurat::FindNeighbors(my_seuratObj, reduction = "pca", dims.use = 1:10)
 my_seuratObj <- Seurat::FindClusters(my_seuratObj, resolution = 0.6, print.output = 0, save.SNN = TRUE)
 my_phemdObj <- bindSeuratObj(my_phemdObj, my_seuratObj)
+
 }

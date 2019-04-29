@@ -14,7 +14,7 @@
 #' @field monocle_obj Data object of type "CellDataSet" that is the core Monocle data structure
 #' @field data_cluster_weights Matrix representing cell subtype relative frequencies for each sample (num_samples x num_genes)
 #' @field emd_dist_mat Matrix representing pairwise distances between each pair of cell subtypes
-#' @field seurat_obj Object of type "seurat" that is the core Seurat data structure
+#' @field seurat_obj Object of type "Seurat" that is the core Seurat data structure
 #' @field experiment_ids Vector of length num_samples representing the experiment (batch) in which the sample was profiled
 #' @name Phemd
 #' @rdname Phemd
@@ -364,7 +364,7 @@ setMethod("monocleInfo<-", "Phemd", function(obj, value) {
 #' @export
 #' @examples
 #' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 #' seuratInfo(phemdObj) <- my_seuratObj
 #' 
 setGeneric("seuratInfo<-", function(obj, value) standardGeneric("seuratInfo<-"))
@@ -407,7 +407,7 @@ setMethod("celltypeFreqs<-", "Phemd", function(obj, value) {
 #' @export
 #' @examples
 #' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
-#' my_seuratObj <- Seurat::CreateSeuratObject(raw.data = t(all_expn_data[[1]]), project = "A")
+#' my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 #' seuratInfo(phemdObj) <- my_seuratObj
 #' batchIDs(phemdObj) <- rep('A', length(all_expn_data))
 #' 
