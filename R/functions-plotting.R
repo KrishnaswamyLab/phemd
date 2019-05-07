@@ -184,9 +184,9 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
         return(myheatmap2)
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(obj)
-        state_labels <- as.numeric(as.character(GetIdent(seurat_obj, uniq=FALSE)))
+        state_labels <- as.numeric(as.character(Idents(seurat_obj)))
         names(state_labels) <- rownames(seurat_obj@meta.data)
-        ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='raw.data')))
+        ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
         
         batches <- unique(batchIDs(obj))
         myheatmaps_all <- list()
@@ -391,8 +391,7 @@ plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('mono
         
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(myobj)
-        state_labels <- as.numeric(GetIdent(seurat_obj, uniq=FALSE))
-        
+        state_labels <- as.numeric(as.character(Idents(seurat_obj)))
     } else {
         stop('Error: cell_model must be either "monocle2" or "seurat"')
     }
