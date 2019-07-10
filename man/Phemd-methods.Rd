@@ -19,6 +19,8 @@
 \alias{monocleInfo<-,Phemd-method}
 \alias{seuratInfo<-}
 \alias{seuratInfo<-,Phemd-method}
+\alias{phateInfo<-}
+\alias{phateInfo<-,Phemd-method}
 \alias{celltypeFreqs<-}
 \alias{celltypeFreqs<-,Phemd-method}
 \alias{batchIDs<-}
@@ -55,6 +57,10 @@ seuratInfo(obj) <- value
 
 \S4method{seuratInfo}{Phemd}(obj) <- value
 
+phateInfo(obj) <- value
+
+\S4method{phateInfo}{Phemd}(obj) <- value
+
 celltypeFreqs(obj) <- value
 
 \S4method{celltypeFreqs}{Phemd}(obj) <- value
@@ -85,6 +91,8 @@ Updated Phemd object
 
 Updated Phemd object containing Seurat object
 
+Updated Phemd object containing phate object
+
 Updated Phemd object
 
 Updated Phemd object
@@ -105,6 +113,8 @@ Setter function for boolean denoting whether cells were subsampled from each sam
 Setter function for Monocle2 CellDataSet object for experiment
 
 Setter function for Seurat object for experiment
+
+Setter function for phate object for experiment
 
 Setter function for cell subtype frequencies of each single-cell sample
 
@@ -142,6 +152,10 @@ monocleInfo(phemdObj) <- myCellDataSet
 phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_seuratObj <- Seurat::CreateSeuratObject(counts = t(all_expn_data[[1]]), project = "A")
 seuratInfo(phemdObj) <- my_seuratObj
+
+phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#my_phateObj <- phateR::phate(all_expn_data[[1]])
+phateInfo(phemdObj) <- list()
 
 phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 myCellTypeFreqs <- matrix(rexp(length(all_expn_data)*10, rate=.1), ncol=10)

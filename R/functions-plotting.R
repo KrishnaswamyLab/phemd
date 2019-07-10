@@ -2,7 +2,7 @@
 #' @description Takes as input a Phemd object containing either a Monocle2 object or Seurat object (already embedded and ordered) and plots cell embedding plots side by side. Optionally saves to specified folder.
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional packages: 'RColorBrewer', 'cowplot'
 #' @param obj 'Phemd' object containing Monocle 2 object
-#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
+#' @param cell_model Method by which cell state was modeled (either "monocle2", "seurat", or "phate)
 #' @param cmap User-specified colormap to use to color cell state embedding (optional)
 #' @param w Width of plot in inches
 #' @param h Height of plot in inches
@@ -16,12 +16,13 @@
 #' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model='gaussianff', sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' cmap <- plotEmbeddings(my_phemdObj_monocle)
-plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w=4, h=5, pt_sz=1, ndims=NULL) {
+plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat', 'phate'), cmap=NULL, w=4, h=5, pt_sz=1, ndims=NULL) {
     saved_palette <- palette()
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
     if(cell_model == 'monocle2') {
         monocle_obj <- monocleInfo(obj)
         cell_embedding <- reducedDimS(monocle_obj)
+        cell_embedding_t <- as.data.frame(t(cell_embedding))
         mydata <- pooledCells(obj)
         
         # Extract state labels from monocle data object
@@ -39,7 +40,6 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
         }
         palette(cmap)
         
-        cell_embedding_t <- as.data.frame(t(cell_embedding))
         # visualize traj colored by state
         myplot_state <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
         geom_point(size=0.4) +
@@ -98,18 +98,52 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
         
         TSNEPlot(seurat_obj, do.label=FALSE, pt.size=pt_sz, colors.use=cmap)
         
+    } else if(cell_model == 'phate') {
+        # Extract PHATE embedding
+        phate_obj <- phateInfo(obj)
+        cell_embedding_t <- as.data.frame(phate_obj$embedding)
+        state_labels <- phate_obj$cellstate.labels
+        
+        levels <- levels(factor(state_labels))
+        levels_renamed <- vapply(levels, function(x) paste("C-", x, sep=""), "")
+        
+        if(is.null(cmap)) {
+            getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+            cmap <- getPalette(max(state_labels))
+            if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+            cmap <- sample(cmap)
+        }
+        palette(cmap)
+        
+        # visualize traj colored by state
+        myplot_state <- ggplot(cell_embedding_t, aes(x=cell_embedding_t[,1], y=cell_embedding_t[,2], color=factor(state_labels))) +
+            geom_point(size=0.4) +
+            scale_color_manual(labels = levels_renamed,
+                               values = cmap) +
+            guides(colour = guide_legend(override.aes = list(size=2))) +
+            labs(x="", y = "", color = "Cell subtype") +
+            theme_classic() +
+            theme(axis.title.x=element_blank(),
+                  axis.text.x=element_blank(),
+                  axis.ticks.x=element_blank(),
+                  axis.title.y=element_blank(),
+                  axis.text.y=element_blank(),
+                  axis.ticks.y=element_blank(),
+                  axis.line = element_line(colour = "black",
+                                           size = 1, linetype = "solid"))
+        print(myplot_state)
     } else {
-        stop('Error: cell_model must be either "monocle2" or "seurat"')
+        stop('Error: cell_model must be either "monocle2", "seurat", or "phate"')
     }
     palette(saved_palette)
     return(cmap)
 }
 
 #' @title Plot heatmap of cell subtypes
-#' @description Takes as input a Phemd object containing either a Monocle2 or Seurat object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
-#' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional package: 'pheatmap'
-#' @param obj 'Phemd' object containing Monocle 2 object
-#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
+#' @description Takes as input a Phemd object containing either a Monocle2, Seurat, or PHATE object (already embedded and clustered) and plots heatmap characterizing cell subtypes
+#' @details \code{embedCells} (and \code{orderCellsMonocle} if using Monocle2) need to be called before calling this function. Required additional package: 'pheatmap'
+#' @param obj 'Phemd' object containing cell-state embedding object
+#' @param cell_model Method by which cell state was modeled ("monocle2", "seurat", or "phate")
 #' @param selected_genes Vector containing gene names to include in heatmap (optional)
 #' @param w Width of plot in inches
 #' @param h Height of plot in inches
@@ -126,11 +160,11 @@ plotEmbeddings <- function(obj, cell_model=c('monocle2', 'seurat'), cmap=NULL, w
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' myheatmap <- plotHeatmaps(my_phemdObj_monocle, cell_model='monocle2')
 #'
-plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=NULL, w=8, h=5, ...) {
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-    if(cell_model == 'monocle2') {
+plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat', 'phate'), selected_genes=NULL, w=8, h=5, ...) {
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
+    if(cell_model %in% c('monocle2', 'phate')) {
         # retrieve reference clusters
-        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type='raw')
+        ref_clusters <- retrieveRefClusters(obj, cell_model=cell_model, expn_type='raw')
         selected_clusters <- seq_len(length(ref_clusters))
         myheatmap <- matrix(0, nrow=length(selected_clusters), ncol=ncol(ref_clusters[[1]]))
         for(i in selected_clusters) {
@@ -185,6 +219,8 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(obj)
         state_labels <- as.numeric(as.character(Idents(seurat_obj)))
+        
+    
         names(state_labels) <- rownames(seurat_obj@meta.data)
         ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
         
@@ -237,6 +273,7 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
             else myheatmaps_avg <- myheatmaps_avg + myheatmaps_all[[i]]
         }
         myheatmaps_avg <- myheatmaps_avg / length(myheatmaps_all)
+        myheatmaps_all[['average']] <- myheatmaps_avg
         pheatmap(myheatmaps_avg,
         cluster_rows=TRUE,
         cluster_cols=FALSE,
@@ -251,7 +288,7 @@ plotHeatmaps <- function(obj, cell_model=c('monocle2','seurat'), selected_genes=
         ...)
         return(myheatmaps_all)
     } else {
-        stop('Error: cell_model must be either "monocle2" or "seurat"')
+        stop('Error: cell_model must be either "monocle2", "seurat", or "phate"')
     }
 }
 
@@ -306,20 +343,11 @@ drawColnames45 <- function(coln, gaps, ...) {
 #' printClusterAssignments(cluster_assignments, my_phemdObj_final, '.', overwrite=TRUE)
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, pt_sz=2)
 #'
-plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5, scale.y=1, angle=40, autosave=FALSE, ...) {
+plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments=NULL, pt_sz=1, n_dim=3, pt_label = NULL, cmap = NULL, w=8, h=5, scale.y=1, angle=40, autosave=FALSE, ...) {
     extra_args <- list(...)
     if(nrow(my_distmat) != ncol(my_distmat)) {
         stop('Error: my_distmat must be a square distance matrix')
     }
-    if(nrow(my_distmat) != length(cluster_assignments)) {
-        stop('Error: cluster_assignments must be the same length as the number of rows in my_distmat')
-    }
-    if(is.null(cmap)) {
-        getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
-        cmap <- getPalette(max(c(cluster_assignments),3)) # min palette size = 3
-        if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
-    }
-    if(length(cmap) > 1) palette(cmap)
     
     # Plot inhibitor groups using diffusion map
     covars <- data.frame(covar1 = seq_len(nrow(my_distmat)))
@@ -328,23 +356,56 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_d
     }
     
     dm_args <- c(list(data=covars, distance = as.dist(my_distmat)),
-    extra_args[names(extra_args) %in% c("n_local", "density_norm", "rotate", "k", "sigma", "verbose")])
+                 extra_args[names(extra_args) %in% c("n_local", "density_norm", "rotate", "k", "sigma", "verbose")])
     dm <- do.call(DiffusionMap, dm_args)
     
-    
-    cluster_assignments_named <- vapply(cluster_assignments, function(x) intToUtf8(64+x), "")
+    # Check whether user supplied clustering info
+    if(is.null(cluster_assignments)) {
+        cluster_assignments <- rep(1, nrow(my_distmat))
+        cluster_assignments_named <- rep('A', nrow(my_distmat))
+        legend_bool <- FALSE
+    } else {
+        if(nrow(my_distmat) != length(cluster_assignments)) {
+            stop('Error: cluster_assignments must be the same length as the number of rows in my_distmat')
+        }
+        if(is.null(cmap)) {
+            getPalette <- colorRampPalette(brewer.pal(11, "Spectral"))
+            cmap <- getPalette(max(c(cluster_assignments),3)) # min palette size = 3
+            if("#FFFFBF" %in% cmap) cmap[which(cmap == "#FFFFBF")] <- "#D3D3D3" #replace light yellow with grey
+        }
+        if(length(cmap) > 1) palette(cmap)
+  
+        cluster_assignments_named <- vapply(cluster_assignments, function(x) intToUtf8(64+x), "")
+        legend_bool <- TRUE
+    }
+
     if(n_dim >= 3) {
-        
-        plot(dm, c(1,2,3), pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=TRUE, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
+        plot(dm, c(1,2,3), pch=20, col=factor(cluster_assignments_named), pal=cmap, cex.symbols = pt_sz, box=FALSE, xlab="", ylab="", zlab="", y.margin.add = -0.5, draw_legend=legend_bool, legend_opts = list(posx = c(0.85,0.88), posy = c(0.05, 0.7)), scale.y=scale.y, angle=angle)
         
     } else {
-        plot(eigenvectors(dm)[,1], eigenvectors(dm)[,2], main = '', xlab = '', ylab = '', xaxt = 'n', yaxt = 'n', pch=20, col=factor(cluster_assignments_named), cex = pt_sz)
+        dm.embedding <- as.data.frame(eigenvectors(dm))
+        # visualize traj colored by state
+        myplot <- ggplot(dm.embedding, aes(x=dm.embedding[,1], y=dm.embedding[,2], color=factor(cluster_assignments_named))) +
+            geom_point(size=pt_sz) +
+            labs(x="", y = "", color = "Sample cluster") +
+            scale_color_manual(breaks = levels(factor(cluster_assignments_named)),
+                               values=cmap[1:length(levels(factor(cluster_assignments_named)))]) +
+            theme_classic() +
+            theme(axis.title.x=element_blank(),
+                  axis.text.x=element_blank(),
+                  axis.ticks.x=element_blank(),
+                  axis.title.y=element_blank(),
+                  axis.text.y=element_blank(),
+                  axis.ticks.y=element_blank(),
+                  axis.line = element_line(colour = "black",
+                                           size = 1, linetype = "solid"))
+        print(myplot)
     }
     
     if(!is.null(pt_label)) {
         cluster_assignments_named <- vapply(cluster_assignments, function(x) paste("G-", x, sep=""), "")
         if(n_dim >= 3) {
-            s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20)
+            s3d <- scatterplot3d(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3], color=as.numeric(factor(cluster_assignments_named)), pch=20, grid=F, box=F)
             s3d.coords <- s3d$xyz.convert(eigenvectors(dm)[,1], eigenvectors(dm)[,2], eigenvectors(dm)[,3])
             text(s3d.coords$x, s3d.coords$y,             # x and y coordinates
             labels=pt_label,               # text to plot
@@ -362,7 +423,7 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_d
 #' @details \code{groupSamples} must be called before calling this function. Saves plots in directory called "summary_inhibs"
 #' @param myobj Phemd object containing cell subtype relative frequency in @@data_cluster_weights slot
 #' @param cluster_assignments Vector containing group assignments for each sample in myobj
-#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
+#' @param cell_model Method by which cell state was modeled (either "monocle2", "seurat", or "phate")
 #' @param cmap Vector containing colors by which histogram bars should be colored (optional)
 #' @param ncol.plot Number of columns to use to plot multi-panel histogram plot
 #' @param ax.lab.sz Scaling factor for axis labels (default 2.5)
@@ -382,7 +443,7 @@ plotGroupedSamplesDmap <- function(my_distmat, cluster_assignments, pt_sz=1, n_d
 #' dm <- plotGroupedSamplesDmap(my_EMD_mat, cluster_assignments, '.', pt_sz=2, pt_label = sNames(my_phemdObj_final))
 #' plotSummaryHistograms(my_phemdObj_final, cluster_assignments, cell_model='monocle2)
 #'
-plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('monocle2','seurat'), cmap=NULL, ncol.plot=4, ax.lab.sz=2.5, title.sz=3) {
+plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('monocle2','seurat', 'phate'), cmap=NULL, ncol.plot=4, ax.lab.sz=2.5, title.sz=3) {
     cell_model <- match.arg(cell_model, c('monocle2','seurat'))
     if(cell_model == 'monocle2') {
         monocle_obj <- monocleInfo(myobj)
@@ -392,6 +453,8 @@ plotSummaryHistograms <- function(myobj, cluster_assignments, cell_model=c('mono
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(myobj)
         state_labels <- as.numeric(as.character(Idents(seurat_obj)))
+    } else if(cell_model == 'phate') {
+        state_labels <- as.numeric(phateInfo(myobj)$cellstate.labels)
     } else {
         stop('Error: cell_model must be either "monocle2" or "seurat"')
     }

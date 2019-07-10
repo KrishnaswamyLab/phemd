@@ -4,21 +4,23 @@
 \alias{generateGDM}
 \title{Computes ground distance matrix based on cell embedding}
 \usage{
-generateGDM(obj, cell_model = c("monocle2", "seurat"),
-  expn_type = "aligned")
+generateGDM(obj, cell_model = c("monocle2", "seurat", "phate"),
+  expn_type = "reduced", ndim = 8)
 }
 \arguments{
-\item{obj}{'Phemd' object containing Monocle2 object (already embedded and ordered) in @monocle_obj slot}
+\item{obj}{'Phemd' object containing cell-state embedding object}
 
-\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
+\item{cell_model}{Method by which cell state was modeled (either "monocle2", "seurat", or "phate")}
 
 \item{expn_type}{Data type to use to determine cell-type dissimilarities}
+
+\item{ndim}{Number of embedding dimensions to be used for computing cell-type dissimilarity (optional)}
 }
 \value{
 Phemd object with ground distance matrix (to be used in EMD computation) in @data_cluster_weights slot
 }
 \description{
-Takes as input a Phemd object with Monocle2 object (already embedded and ordered) in @monocle_obj slot. Returns updated object with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
+Takes as input a Phemd object containing cell-state embedding object. Returns updated object with ground distance matrix representing pairwise distances between distinct cell subtypes based on cell state embedding.
 }
 \details{
 \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Requires 'igraph' package

@@ -4,9 +4,9 @@
 \alias{plotGroupedSamplesDmap}
 \title{Plot diffusion map embedding of samples based on distance matrix}
 \usage{
-plotGroupedSamplesDmap(my_distmat, cluster_assignments, pt_sz = 1,
-  n_dim = 3, pt_label = NULL, cmap = NULL, w = 8, h = 5,
-  scale.y = 1, angle = 40, autosave = FALSE, ...)
+plotGroupedSamplesDmap(my_distmat, cluster_assignments = NULL,
+  pt_sz = 1, n_dim = 3, pt_label = NULL, cmap = NULL, w = 8,
+  h = 5, scale.y = 1, angle = 40, autosave = FALSE, ...)
 }
 \arguments{
 \item{my_distmat}{phemdObj object containing sample names in @snames slot}

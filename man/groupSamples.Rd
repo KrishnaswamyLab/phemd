@@ -2,19 +2,21 @@
 % Please edit documentation in R/functions-core.R
 \name{groupSamples}
 \alias{groupSamples}
-\title{Performs community detection on sample-sample distance matrix}
+\title{Performs community detection on sample-sample distance matrix to identify groups of similar samples}
 \usage{
 groupSamples(distmat, distfun = "hclust", ncluster = NULL,
-  method = "complete")
+  method = "complete", ...)
 }
 \arguments{
-\item{distmat}{Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples}
+\item{distmat}{A distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples}
 
 \item{distfun}{Method of partitioning network of samples (currently either 'hclust' or 'pam')}
 
 \item{ncluster}{Optional parameter specifying total number of sample groups}
 
 \item{method}{Optional parameter for hierarchical clustering (see "hclust" documentation)}
+
+\item{...}{Optional additional parameters to be passed to diffusionKmeans method}
 }
 \value{
 Vector containing group assignments for each sample (same order as row-order of distmat) based on user-specified partitioning method (e.g. hierarchical clustering)
@@ -30,7 +32,7 @@ By default, uses 'kgs' (Kelley-Gardner-Sutcliffe) method for determining optimal
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
+my_phemdObj_monocle <- embedCells(my_phemdObj_lg, cell_model = 'monocle2', data_model = 'gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 my_phemdObj_final <- generateGDM(my_phemdObj_final)

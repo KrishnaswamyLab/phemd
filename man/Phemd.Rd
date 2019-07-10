@@ -29,7 +29,9 @@ The main PhEMD class to store single-cell expression data.
 
 \item{\code{emd_dist_mat}}{Matrix representing pairwise distances between each pair of cell subtypes}
 
-\item{\code{seurat_obj}}{Object of type "Seurat" that is the core Seurat data structure}
+\item{\code{seurat_obj}}{Object of class "Seurat" that is the core Seurat data structure}
+
+\item{\code{phate_obj}}{Object of class "phate" that is the core PHATE data structure}
 
 \item{\code{experiment_ids}}{Vector of length num_samples representing the experiment (batch) in which the sample was profiled}
 }}

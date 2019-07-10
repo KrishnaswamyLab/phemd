@@ -21,12 +21,12 @@ getSampleSizes <- function(data_list) {
 }
 
 #' @title Retrieve reference cell clusters
-#' @description Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
+#' @description Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (e.g. PHATE or Monocle2)
 #' @details Private method (not exported in namespace)
-#' @param obj Phemd struct containing Monocle2 object and underlying expression data
-#' @param cell_model String representing data model for cell state space (Seurat or Monocle 2)
-#' @param expn_type String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)
-#' @param ndim Number of dimensions (e.g. CCA) to use (only relevant for Seurat data models)
+#' @param obj Phemd struct containing cell-state embedding object and underlying expression data
+#' @param cell_model String representing data model for cell-state space ("seurat", "monocle2", or "phate")
+#' @param expn_type String representing whether to return raw expression values or coordinates in dimensionality-reduced feature space
+#' @param ndim Number of dimensions in reduced dimensionality space (e.g. PHATE / CCA) to use (only relevant in reduced dimensionality space)
 #' @return List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
 #' @examples
 #' \dontrun{
@@ -34,9 +34,8 @@ getSampleSizes <- function(data_list) {
 #' }
 #'
 
-retrieveRefClusters <- function(obj, cell_model=c('monocle2','seurat'),
-expn_type='aligned', ndim=10) {
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+retrieveRefClusters <- function(obj, cell_model=c('monocle2','seurat', 'phate'), expn_type='reduced', ndim=10) {
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
     if(cell_model == 'monocle2') {
         # Extract state labels from monocle data object
         monocle_obj <- monocleInfo(obj)
@@ -44,35 +43,51 @@ expn_type='aligned', ndim=10) {
         state_labels <- as.numeric(labels$State)
         
         # Split data frame based on cluster assignments
-        if(expn_type == 'aligned') {
+        if(expn_type == 'reduced') {
             mydata <- as.data.frame(t(reducedDimS(obj@monocle_obj)))
+            if(ndim < ncol(mydata)) {
+                mydata <- mydata[,1:ndim]
+            }
         } else if(expn_type == 'raw') {
             mydata <- as.data.frame(t(pooledCells(obj)))
         }
-        ref_clusters <- split(mydata, state_labels)
-        
     } else if(cell_model == 'seurat') {
         seurat_obj <- seuratInfo(obj)
         state_labels <- as.numeric(as.character(Idents(seurat_obj)))
         if(min(state_labels) == 0) state_labels <- state_labels + 1 #ensure cluster labels are 1 indexed instead of zero indexed
         names(state_labels) <- names(Idents(seurat_obj)) # label cluster assignments with cell name
-        if(expn_type == 'aligned') {
+        if(expn_type == 'reduced') {
             # aligned CCA expression data (num_cells x num_markers)
             mydata <- Embeddings(object = seurat_obj, reduction = 'cca.aligned')[,seq_len(ndim)]
         } else if(expn_type == 'pca') {
             mydata <- Embeddings(object = seurat_obj, reduction = 'pca')[,seq_len(ndim)]
-        }else if(expn_type == 'raw') {
+        } else if(expn_type == 'raw') {
             mydata <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
         } else {
-            stop('Error: expn_type must be either "raw" or "aligned"')
+            stop('Error: expn_type must be either "raw" or "reduced"')
         }
         
         # Split data frame based on cluster assignments
         mydata <- as.data.frame(mydata)
-        ref_clusters <- split(mydata, state_labels)
+    } else if(cell_model == 'phate') {
+        phate_obj <- phateInfo(obj)
+        state_labels <- phate_obj$cellstate.labels
+        
+        # Split data frame based on cluster assignments
+        if(expn_type == 'reduced') {
+            mydata <- as.data.frame(phate_obj$embedding)
+            if(ndim < ncol(mydata)) {
+                mydata <- mydata[,1:ndim]
+            }
+        } else if(expn_type == 'raw') {
+            mydata <- as.data.frame(t(pooledCells(obj)))
+        } else {
+            stop('Error: expn_type must be either "raw" or "reduced"')
+        }
     } else {
-        stop('Error: cell_model must be either "monocle2" or "seurat"')
+        stop('Error: cell_model must be either "monocle2", "seurat", or "phate"')
     }
+    ref_clusters <- split(mydata, state_labels)
     return(ref_clusters)
 }
 
@@ -86,7 +101,6 @@ expn_type='aligned', ndim=10) {
 #' \dontrun{
 #' centroid_names <- identifyCentroids(ref_clusters)
 #' }
-
 identifyCentroids <- function(ref_clusters) {
     centroids <- lapply(ref_clusters, function(cur_cluster) {
         arith_centroid <- colMeans(cur_cluster)
@@ -127,27 +141,27 @@ getArithmeticCentroids <- function(ref_clusters) {
 #' @param cur_cells Matrix of cells to be assigned to clusters (Dim: \var{num_cells} x \var{num_markers})
 #' @param ref_cells Matrix of cells used to build reference Monocle 2 tree (Dim: \var{num_monocle_cells} x \var{num_markers})
 #' @param ref_cell_labels Vector of length \var{num_monocle_cells} containing Monocle 2 cell branch assignments
-#' @param cell_model Either "monocle2" or "seurat" depending on method used to model cell state space
+#' @param cell_model Either "monocle2", "seurat", or "phate" depending on method used to model cell state space
 #' @return Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}
 #' @examples
 #' \dontrun{
 #' cur_cells_cluster_labels <- assignCellClusterNearestNode(cur_cells_expn_data,
 #' clustered_cells_expn_data, clustered_cells_cluster_labels, cell_model='monocle2')
 #' }
-assignCellClusterNearestNode <- function(cur_cells, ref_cells, ref_cell_labels, cell_model=c('monocle2', 'seurat')) {
+assignCellClusterNearestNode <- function(cur_cells, ref_cells, ref_cell_labels, cell_model=c('monocle2', 'seurat', 'phate')) {
     if(nrow(ref_cells) != length(ref_cell_labels)) stop("Error: number of cells and cell labels do not match")
     
     closest <- RANN::nn2(data = ref_cells, query = cur_cells, k = 1) #fast nearest neighbor search
     nearest_cell <- closest$nn.idx
     
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-    if(cell_model == 'monocle2') {
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
+    if(cell_model %in% c('monocle2', 'phate')) {
         assigned <- ref_cell_labels[nearest_cell]
     } else if(cell_model == 'seurat') {
         nearest_cell_names <- rownames(ref_cells)[nearest_cell]
         assigned <- as.numeric(ref_cell_labels[nearest_cell_names])
     } else {
-        stop('Error: cell_model must be either monocle2 or seurat')
+        stop('Error: cell_model must be either monocle2, seurat, or phate')
     }
     
     return(assigned)
@@ -394,7 +408,7 @@ createDataObj <- function(data, markers, snames, datatype='list', valtype='count
 }
 
 
-#' @title Attach 'seurat' object to 'Phemd' object
+#' @title Attach 'Seurat' object to 'Phemd' object
 #' @description Allows user to attach batch-normalized reference cell data from Seurat into 'Phemd' object containing raw expression data and metadata
 #' @param phemd_obj Phemd object initialized using createDataObj
 #' @param seurat_obj S4 'seurat' object containing batch-normalized reference cell data
@@ -539,96 +553,115 @@ selectFeatures <- function(obj, selected_genes) {
     return(obj)
 }
 
-#' @title Generate Monocle2 embedding
-#' @description Takes as input a Phemd object with aggregated data and returns updated object with Monocle2 object in @@monocle_obj slot
-#' @details Wrapper function for \code{reduceDimension} in Monocle 2 package. \code{aggregateSamples} needs to be called before running this function.
+#' @title Generate cell-state embedding
+#' @description Takes as input a Phemd object with aggregated data and returns updated object containing cell-state embedding
+#' @details \code{aggregateSamples} needs to be called before running this function.
 #' @param obj 'Phemd' object containing aggregated data
-#' @param data_model One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'uninormal', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}
-#' @param ... Additional parameters to be passed to \code{reduceDimension} function
-#' @return Same as input 'Phemd' object with additional Monocle2 object in @@monocle_obj slot
+#' @param cell_model Method to use to generate cell-state embedding. Currently supports "phate" and "monocle2". If using the Seurat to model the cell-state space, please identify cell subtypes as outlined in the Seurat software package and then use the \code{bindSeuratObj} function.
+#' @param data_model Only relevant if cell_model = "monocle2". One of the following: 'negbinomial_sz', 'negbinomial', 'tobit', 'uninormal', 'gaussianff'. See "Family Function" table at the following link for more details on selecting the proper one. \url{http://cole-trapnell-lab.github.io/monocle-release/docs/#getting-started-with-monocle}
+#' @param phate_ncluster Only relevant if cell_model = "phate". Number of cell state clusters to return when using PHATE
+#' @param phate_cluster_seed Only relevant if cell_model = "phate". Seed to use when performing cell state clustering (optional)
+#' @param ... Additional parameters to be passed to \code{reduceDimension} function for Monocle or \code{phate} function for PHATE
+#' @return Same as input 'Phemd' object containing additional cell-state embedding object
 #' @examples
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-#' my_phemdObj_lg <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
-embedCells <- function(obj, data_model = 'negbinomial_sz', ...) {
+#' my_phemdObj_lg <- embedCells(my_phemdObj_lg, cell_model='monocle2', data_model = 'gaussianff', sigma=0.02, maxIter=2)
+embedCells <- function(obj, cell_model=c('monocle2', 'seurat', 'phate'), data_model = 'negbinomial_sz', phate_ncluster=8, phate_cluster_seed=NULL, ...) {
     extra_args <- list(...)
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
     
     if(isempty(pooledCells(obj))) stop('slot "data_aggregate" is empty; please call aggregateSamples() before running embedCells()')
     mydata <- pooledCells(obj)
     if(is.null(mydata)) stop("Error: call 'aggregateSamples' function first ")
     
-    myFeatureData <- as.data.frame(selectMarkers(obj))
-    fd <- new("AnnotatedDataFrame", data=myFeatureData)
-    rownames(fd) <- selectMarkers(obj)
-    
-    if(is.null(data_model)) {
-        print('Assuming data fit negative binomial pattern of expression...')
-        data_model <- 'negbinomial_sz'
-    }
-    
-    if(data_model == 'negbinomial_sz') {
-        expression_fam_fn <- VGAM::negbinomial.size()
-    } else if(data_model == 'negbinomial') {
-        expression_fam_fn <- VGAM::negbinomial()
-    } else if(data_model == 'tobit') {
-        expression_fam_fn <- VGAM::tobit()
-    } else if(data_model == 'uninormal') {
-        expression_fam_fn <- VGAM::uninormal()
-    } else if(data_model == 'gaussianff') {
-        #expression_fam_fn <- VGAM::gaussianff()
-        expression_fam_fn <- gaussianffLocal()
-    } else {
-        stop("Error: Invalid data_model specified")
-    }
-    
-    # Helpful to use ncenter and sigma that's higher than default in reduceDimension for datasets w/ relatively more cells
-    if(!('ncenter' %in% names(extra_args)) && ncol(mydata) > 3000) {
-        extra_args['ncenter'] <- 750
-        if(!('sigma' %in% names(extra_args))) extra_args['sigma'] <- 0.03
-    }
-    
-    if(!('maxIter' %in% names(extra_args))) {
-        extra_args['maxIter'] <- 12 #set maximum number of iterations to 12
-    }
-    
-    if(!('max_components' %in% names(extra_args))) {
-        extra_args['max_components'] <- 2 #set number of dimensionality-reduced components to 2
-    }
-    
-    monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData=fd,
-    expressionFamily=expression_fam_fn)
-    varLabels(featureData(monocle_obj)) <- 'gene_short_name' #random formatting requirement for monocle
-    
-    monocle_obj <- estimateSizeFactors(monocle_obj)
-    if(data_model == 'negbinomial_sz') {
-        monocle_obj <- estimateDispersions(monocle_obj)
-    }
-    if(data_model == 'gaussianff') {
-        extra_args['norm_method'] <- 'none'
-        extra_args['scaling'] <- 'FALSE'
-    }
-    
-    rd_args <- c(list(cds=monocle_obj, reduction_method='DDRTree'),
-    extra_args[names(extra_args) %in% c("verbose", "ncenter", "norm_method", 'scaling', 'pseudo_expr', "initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol", "max_components")])
-    monocle_obj_red <- do.call(reduceDimension, rd_args)
-    
-    monocleInfo(obj) <- monocle_obj_red
+    if(cell_model == 'monocle2') {
+        myFeatureData <- as.data.frame(selectMarkers(obj))
+        fd <- new("AnnotatedDataFrame", data=myFeatureData)
+        rownames(fd) <- selectMarkers(obj)
+        
+        if(is.null(data_model)) {
+            print('Assuming data fit negative binomial pattern of expression...')
+            data_model <- 'negbinomial_sz'
+        }
+        
+        if(data_model == 'negbinomial_sz') {
+            expression_fam_fn <- VGAM::negbinomial.size()
+        } else if(data_model == 'negbinomial') {
+            expression_fam_fn <- VGAM::negbinomial()
+        } else if(data_model == 'tobit') {
+            expression_fam_fn <- VGAM::tobit()
+        } else if(data_model == 'uninormal') {
+            expression_fam_fn <- VGAM::uninormal()
+        } else if(data_model == 'gaussianff') {
+            #expression_fam_fn <- VGAM::gaussianff()
+            expression_fam_fn <- gaussianffLocal()
+        } else {
+            stop("Error: Invalid data_model specified")
+        }
+        
+        # Helpful to use ncenter and sigma that's higher than default in reduceDimension for datasets w/ relatively more cells
+        if(!('ncenter' %in% names(extra_args)) && ncol(mydata) > 3000) {
+            extra_args['ncenter'] <- 750
+            if(!('sigma' %in% names(extra_args))) extra_args['sigma'] <- 0.03
+        }
+        
+        if(!('maxIter' %in% names(extra_args))) {
+            extra_args['maxIter'] <- 12 #set maximum number of iterations to 12
+        }
+        
+        if(!('max_components' %in% names(extra_args))) {
+            extra_args['max_components'] <- 2 #set number of dimensionality-reduced components to 2
+        }
+        
+        monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData=fd,
+                                      expressionFamily=expression_fam_fn)
+        varLabels(featureData(monocle_obj)) <- 'gene_short_name' #random formatting requirement for monocle
+        
+        monocle_obj <- estimateSizeFactors(monocle_obj)
+        if(data_model == 'negbinomial_sz') {
+            monocle_obj <- estimateDispersions(monocle_obj)
+        }
+        if(data_model == 'gaussianff') {
+            extra_args['norm_method'] <- 'none'
+            extra_args['scaling'] <- 'FALSE'
+        }
+        
+        rd_args <- c(list(cds=monocle_obj, reduction_method='DDRTree'),
+                     extra_args[names(extra_args) %in% c("verbose", "ncenter", "norm_method", 'scaling', 'pseudo_expr', "initial_method", "maxIter", "sigma", "lambda", "param.gamma", "tol", "max_components")])
+        monocle_obj_red <- do.call(reduceDimension, rd_args)
+        
+        monocleInfo(obj) <- monocle_obj_red
+    } else if(cell_model == 'phate') {
+        # Perform phate embedding and generate cell state labels
+        rd_args <- c(list(data=t(mydata)),
+                     extra_args)
+        phate_obj <- do.call(phate, rd_args)
+        state_labels <- cluster_phate(phate_obj, phate_ncluster, phate_cluster_seed)
+        if(min(state_labels) <= 0) {
+            # Ensure numeric cell state labels are 1-indexed
+            state_labels <- state_labels - min(state_labels) + 1 
+        }
+        phate_obj$cellstate.labels <- state_labels
+        class(phate_obj) <- 'list'
+        phateInfo(obj) <- phate_obj
+    } 
     return(obj)
 }
 
 #' @title Compute Monocle2 cell state and pseudotime assignments
 #' @description Takes as input a Phemd object with Monocle2 object and returns updated object with Monocle2 object containing cell state and pseudotime assignments
 #' @details Wrapper function for \code{orderCells} in Monocle 2 package. \code{embedCells} needs to be called before calling this function.
-#' @param obj 'Phemd' object containing initial Monocle 2 object
+#' @param obj 'Phemd' object containing Monocle2 object initialized using embedCells
 #' @param ... Additional parameters to be passed into \code{orderCells} function
-#' @return Same as input 'Phemd' object with updated Monocle2 object in @@monocle_obj slot containing cell state and pseudotime assignments
+#' @return Same as input 'Phemd' object with updated cell-state embedding object containing cell state assignments
 #' @examples
 #'
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model='gaussianff', sigma=0.02, maxIter=2)
+#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, cell_model='monocle2', data_model='gaussianff', sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 orderCellsMonocle <- function(obj, ...) {
     monocle_obj <- monocleInfo(obj)
@@ -644,12 +677,12 @@ orderCellsMonocle <- function(obj, ...) {
 }
 
 #' @title Computes cell subtype abundances for each sample
-#' @description Takes as input a Phemd object with all single-cell expression data of all single-cell samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns updated object with cell subtype frequencies of each sample in @@data_cluster_weights slot
-#' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function.
-#' @param obj 'Phemd' object containing single-cell expression data of all samples in @@data slot and Monocle2 object (already embedded and ordered) in @@monocle_obj slot
+#' @description Takes as input a Phemd object with all single-cell expression data of all single-cell samples in @@data slot and cell-state embedding generated by embedCells. Returns updated object with cell subtype frequencies of each sample that may be retrieved by the 'celltypeFreqs' accessor function.
+#' @details \code{embedCells} (and \code{orderCellsMonocle} if using the Monocle2 embedding technique) needs to be called before calling this function.
+#' @param obj 'Phemd' object containing single-cell expression data of all samples in @@data slot and cell-state embedding object generated and stored using the embedCells function.
 #' @param verbose Boolean that determines whether progress (sequential processing of samples) should be printed. FALSE by default
-#' @param cell_model Either "monocle2" or "seurat" depending on method used to model cell state space
-#' @return 'Phemd' object with cell subtype frequencies of each sample in @@data_cluster_weights slot
+#' @param cell_model Either "monocle2", "seurat", or "phate" depending on method used to model cell state space
+#' @return 'Phemd' object with cell subtype frequencies of each sample that can be retrieved using the 'celltypeFreqs' accessor function
 #' @examples
 #'
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
@@ -659,20 +692,37 @@ orderCellsMonocle <- function(obj, ...) {
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 #'
-clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2', 'seurat')) {
+clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2', 'seurat', 'phate')) {
     stopifnot(is(obj,'Phemd'))
     all_data <- rawExpn(obj)
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
-    if(cell_model == 'monocle2') {
-        monocle_obj <- monocleInfo(obj)
-        if(ncol(monocle_obj) == 0) stop('slot "monocle_obj" is empty; please call embedCells() and orderCellsMonocle() before calling this function')
-        
-        # Extract state labels from monocle data object
-        labels <- pData(phenoData(monocle_obj))
-        if(!('State' %in% names(labels))) stop('monocleInfo(obj) does not have cell state assignments; please call embedCells() and orderCellsMonocle() before calling this function')
-        state_labels <- as.numeric(labels$State)
-        # retrieve reference clusters
-        ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type='raw')
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
+    if(cell_model %in% c('monocle2', 'phate')) {
+        if(cell_model == 'monocle2') {
+            # Use Monocle2 embedding and clusters
+            monocle_obj <- monocleInfo(obj)
+            if(ncol(monocle_obj) == 0) stop('slot "monocle_obj" is empty; please call embedCells() and orderCellsMonocle() before calling this function')
+            
+            # Extract state labels from monocle data object
+            labels <- pData(phenoData(monocle_obj))
+            if(!('State' %in% names(labels))) stop('monocleInfo(obj) does not have cell state assignments; please call embedCells() and orderCellsMonocle() before calling this function')
+            state_labels <- as.numeric(labels$State)
+            # retrieve reference clusters
+            ref_clusters <- retrieveRefClusters(obj, cell_model='monocle2', expn_type='raw')
+            refcells_expn <- t(exprs(monocle_obj))
+        } else {
+            # Use PHATE embedding and clusters
+            phate_obj <- phateInfo(obj)
+            if(length(phate_obj) == 0) {
+                stop('slot "phate_obj" is empty; please call embedCells() and clusterCellsPHATE() before calling this function')
+            }
+            if(!('cellstate.labels' %in% names(phate_obj))) {
+                stop('phateInfo(obj) does not have cell state assignments; please call embedCells() and clusterCellsPHATE() before calling this function')
+            }
+            state_labels <- phate_obj$cellstate.labels
+            # retrieve reference clusters
+            ref_clusters <- retrieveRefClusters(obj, cell_model='phate', expn_type='raw')
+            refcells_expn <- t(pooledCells(obj))
+        }
         nclusters <- length(ref_clusters)
         cluster.ids <- names(ref_clusters)
         
@@ -718,10 +768,10 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
                 
                 # Use nearest-cell mapping instead of nearest-centroid mapping
                 cur_cell_labels <- assignCellClusterNearestNode(cur_data,
-                t(exprs(monocle_obj)),
-                state_labels,
-                cell_model=cell_model)
-                
+                                                                refcells_expn,
+                                                                state_labels,
+                                                                cell_model=cell_model)
+         
                 for(j in seq_len(nclusters)) {
                     cur_hist[j] <- sum(cur_cell_labels == cluster.ids[j])
                 }
@@ -761,7 +811,8 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
             cur_hist <- rep(0, nclusters)
             state_labels <- as.numeric(as.character(Idents(seurat_obj)))
             names(state_labels) <- rownames(seurat_obj@meta.data)
-            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
+            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', 
+                                                 slot='counts')))
             cell_idx_curplt <- which(seurat_obj@meta.data$plt == cur_plt)
             if(length(cell_idx_curplt) == 0) {
                 stop(sprintf('Error: no cells in reference set match the experiment_id %s of sample %d', cur_plt, i))
@@ -770,9 +821,10 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
             state_labels <- state_labels[cell_idx_curplt]
             
             # Use nearest-cell mapping
-            cur_cell_labels <- assignCellClusterNearestNode(cur_data, ref_data,
-            state_labels,
-            cell_model=cell_model)
+            cur_cell_labels <- assignCellClusterNearestNode(cur_data,
+                                                            ref_data,
+                                                            state_labels,
+                                                            cell_model=cell_model)
             
             for(j in seq_len(nclusters)) {
                 cur_hist[j] <- sum(cur_cell_labels == j)
@@ -784,7 +836,7 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
         
         celltypeFreqs(obj) <- cluster_weights
     } else {
-        stop('Error: cell_model must be either "monocle2" or "seurat"')
+        stop('Error: cell_model must be either "monocle2", "seurat", or "phate"')
     }
     
     return(obj)
@@ -792,11 +844,12 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 
 
 #' @title Computes ground distance matrix based on cell embedding
-#' @description Takes as input a Phemd object with Monocle2 object (already embedded and ordered) in @@monocle_obj slot. Returns updated object with ground distance matrix representing pairwise distance between 2 cell subtypes based on cell state embedding.
+#' @description Takes as input a Phemd object containing cell-state embedding object. Returns updated object with ground distance matrix representing pairwise distances between distinct cell subtypes based on cell state embedding.
 #' @details \code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Requires 'igraph' package
-#' @param obj 'Phemd' object containing Monocle2 object (already embedded and ordered) in @@monocle_obj slot
-#' @param cell_model Method by which cell state was modeled (either "monocle2" or "seurat")
+#' @param obj 'Phemd' object containing cell-state embedding object
+#' @param cell_model Method by which cell state was modeled (either "monocle2", "seurat", or "phate")
 #' @param expn_type Data type to use to determine cell-type dissimilarities
+#' @param ndim Number of embedding dimensions to be used for computing cell-type dissimilarity (optional)
 #' @return Phemd object with ground distance matrix (to be used in EMD computation) in @@data_cluster_weights slot
 #' @examples
 #'
@@ -808,10 +861,10 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
 #' my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #'
-generateGDM <- function(obj, cell_model=c('monocle2', 'seurat'), expn_type='aligned') {
+generateGDM <- function(obj, cell_model=c('monocle2', 'seurat', 'phate'), expn_type='reduced', ndim=8) {
     stopifnot(is(obj,'Phemd'))
     
-    cell_model <- match.arg(cell_model, c('monocle2','seurat'))
+    cell_model <- match.arg(cell_model, c('monocle2','seurat', 'phate'))
     if(cell_model == 'monocle2') {
         monocle_obj <- monocleInfo(obj)
         # retrieve reference clusters
@@ -833,13 +886,12 @@ generateGDM <- function(obj, cell_model=c('monocle2', 'seurat'), expn_type='alig
             }
         }
         GDM(obj) <- emd_dists
-    } else if(cell_model == 'seurat') {
-        ref_clusters <- retrieveRefClusters(obj, cell_model='seurat', expn_type=expn_type, ndim=8)
-        seurat_obj <- seuratInfo(obj)
+    } else if(cell_model %in% c('seurat', 'phate')) {
+        ref_clusters <- retrieveRefClusters(obj, cell_model=cell_model, expn_type=expn_type, ndim=ndim)
         centroids <- getArithmeticCentroids(ref_clusters)
         GDM(obj) <- as.matrix(dist(centroids))
     } else {
-        stop('Error: cell_model must be either "monocle2" or "seurat"')
+        stop('Error: cell_model must be either "monocle2", "seurat", or "phate"')
     }
     return(obj)
 }
@@ -888,28 +940,29 @@ compareSamples <- function(obj) {
     return(Y_sq)
 }
 
-#' @title Performs community detection on sample-sample distance matrix
+#' @title Performs community detection on sample-sample distance matrix to identify groups of similar samples 
 #' @description Takes sample-sample distance matrix as input and returns group assignments for each sample
 #' @details By default, uses 'kgs' (Kelley-Gardner-Sutcliffe) method for determining optimal number of groups. Alternatively, can take user-specified number of groups). Requires 'cluster' and 'maptree' packages.
-#' @param distmat Distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
+#' @param distmat A distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples
 #' @param distfun Method of partitioning network of samples (currently either 'hclust' or 'pam')
 #' @param ncluster Optional parameter specifying total number of sample groups
 #' @param method Optional parameter for hierarchical clustering (see "hclust" documentation)
+#' @param ... Optional additional parameters to be passed to diffusionKmeans method
 #' @return Vector containing group assignments for each sample (same order as row-order of distmat) based on user-specified partitioning method (e.g. hierarchical clustering)
 #' @examples
 #' 
 #' my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 #' my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 #' my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model = 'gaussianff', sigma=0.02, maxIter=2)
+#' my_phemdObj_monocle <- embedCells(my_phemdObj_lg, cell_model = 'monocle2', data_model = 'gaussianff', sigma=0.02, maxIter=2)
 #' my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 #' my_phemdObj_final <- clusterIndividualSamples(my_phemdObj_monocle)
 #' my_phemdObj_final <- generateGDM(my_phemdObj_final)
 #' my_EMD_mat <- compareSamples(my_phemdObj_final)
 #' cluster_assignments <- groupSamples(my_EMD_mat, distfun = 'hclust', ncluster=4)
 #' 
-groupSamples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='complete') {
-    ## Identify similar groups of inhibitors (hierarchical clustering for now)
+groupSamples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='complete', ...) {
+    ## Clustering on distance matrix
     if(nrow(distmat) != ncol(distmat)) {
         stop('Error: distmat must be a square distance matrix of dimension num_samples x num_samples')
     }
@@ -924,7 +977,7 @@ groupSamples <- function(distmat, distfun = 'hclust', ncluster=NULL, method='com
     } else if(distfun == 'pam') {
         if(is.null(ncluster)) ncluster <- 4
         cluster_results <- pam(distmat, ncluster, diss=TRUE)
-        cluster_assignments=cluster_results$clustering
+        cluster_assignments <- cluster_results$clustering
     } else {
         stop("Error: Please specify distfun as either 'hclust' or 'pam'")
     }

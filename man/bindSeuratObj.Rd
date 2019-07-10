@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions-core.R
 \name{bindSeuratObj}
 \alias{bindSeuratObj}
-\title{Attach 'seurat' object to 'Phemd' object}
+\title{Attach 'Seurat' object to 'Phemd' object}
 \usage{
 bindSeuratObj(phemd_obj, seurat_obj, batch.colname = "plt")
 }

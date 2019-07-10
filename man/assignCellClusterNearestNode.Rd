@@ -5,7 +5,7 @@
 \title{Assign cells to a reference cell subtype}
 \usage{
 assignCellClusterNearestNode(cur_cells, ref_cells, ref_cell_labels,
-  cell_model = c("monocle2", "seurat"))
+  cell_model = c("monocle2", "seurat", "phate"))
 }
 \arguments{
 \item{cur_cells}{Matrix of cells to be assigned to clusters (Dim: \var{num_cells} x \var{num_markers})}
@@ -14,7 +14,7 @@ assignCellClusterNearestNode(cur_cells, ref_cells, ref_cell_labels,
 
 \item{ref_cell_labels}{Vector of length \var{num_monocle_cells} containing Monocle 2 cell branch assignments}
 
-\item{cell_model}{Either "monocle2" or "seurat" depending on method used to model cell state space}
+\item{cell_model}{Either "monocle2", "seurat", or "phate" depending on method used to model cell state space}
 }
 \value{
 Vector of length \var{num_cells} representing cluster assignments for each cell in \var{cur_cells}

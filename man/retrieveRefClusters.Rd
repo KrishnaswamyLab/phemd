@@ -4,23 +4,23 @@
 \alias{retrieveRefClusters}
 \title{Retrieve reference cell clusters}
 \usage{
-retrieveRefClusters(obj, cell_model = c("monocle2", "seurat"),
-  expn_type = "aligned", ndim = 10)
+retrieveRefClusters(obj, cell_model = c("monocle2", "seurat", "phate"),
+  expn_type = "reduced", ndim = 10)
 }
 \arguments{
-\item{obj}{Phemd struct containing Monocle2 object and underlying expression data}
+\item{obj}{Phemd struct containing cell-state embedding object and underlying expression data}
 
-\item{cell_model}{String representing data model for cell state space (Seurat or Monocle 2)}
+\item{cell_model}{String representing data model for cell-state space ("seurat", "monocle2", or "phate")}
 
-\item{expn_type}{String representing whether to return raw expression values or coordinates in dimensionality-reduced, aligned feature space (only relevant for Seurat data models)}
+\item{expn_type}{String representing whether to return raw expression values or coordinates in dimensionality-reduced feature space}
 
-\item{ndim}{Number of dimensions (e.g. CCA) to use (only relevant for Seurat data models)}
+\item{ndim}{Number of dimensions in reduced dimensionality space (e.g. PHATE / CCA) to use (only relevant in reduced dimensionality space)}
 }
 \value{
 List of data matrices; each list element is of size num_cells_in_cluster x num_markers and represents a distinct cell cluster
 }
 \description{
-Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (i.e. Monocle 2)
+Takes initial Phemd struct and returns cell clusters as assigned by clustering algorithm (e.g. PHATE or Monocle2)
 }
 \details{
 Private method (not exported in namespace)

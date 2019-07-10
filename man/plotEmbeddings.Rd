@@ -4,13 +4,13 @@
 \alias{plotEmbeddings}
 \title{Plots Monocle2 cell embedding plots}
 \usage{
-plotEmbeddings(obj, cell_model = c("monocle2", "seurat"), cmap = NULL,
-  w = 4, h = 5, pt_sz = 1, ndims = NULL)
+plotEmbeddings(obj, cell_model = c("monocle2", "seurat", "phate"),
+  cmap = NULL, w = 4, h = 5, pt_sz = 1, ndims = NULL)
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle 2 object}
 
-\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
+\item{cell_model}{Method by which cell state was modeled (either "monocle2", "seurat", or "phate)}
 
 \item{cmap}{User-specified colormap to use to color cell state embedding (optional)}
 

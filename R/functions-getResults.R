@@ -62,7 +62,7 @@ getSampleHistsByCluster <- function(myobj, cluster_assignments, cell_model=c('mo
     state_labels <- as.numeric(labels$State)
   } else if(cell_model == 'seurat') {
     seurat_obj <- seuratInfo(myobj)
-    state_labels <- as.numeric(GetIdent(seurat_obj, uniq=FALSE))
+    state_labels <- as.numeric(as.character(Idents(seurat_obj)))
   } else {
     stop('Error: cell_model must either be "monocle2" or "seurat"')
   }

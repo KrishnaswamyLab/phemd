@@ -7,12 +7,12 @@
 orderCellsMonocle(obj, ...)
 }
 \arguments{
-\item{obj}{'Phemd' object containing initial Monocle 2 object}
+\item{obj}{'Phemd' object containing Monocle2 object initialized using embedCells}
 
 \item{...}{Additional parameters to be passed into \code{orderCells} function}
 }
 \value{
-Same as input 'Phemd' object with updated Monocle2 object in @monocle_obj slot containing cell state and pseudotime assignments
+Same as input 'Phemd' object with updated cell-state embedding object containing cell state assignments
 }
 \description{
 Takes as input a Phemd object with Monocle2 object and returns updated object with Monocle2 object containing cell state and pseudotime assignments
@@ -25,6 +25,6 @@ Wrapper function for \code{orderCells} in Monocle 2 package. \code{embedCells} n
 my_phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
 my_phemdObj_lg <- removeTinySamples(my_phemdObj, 10)
 my_phemdObj_lg <- aggregateSamples(my_phemdObj_lg, max_cells=1000)
-my_phemdObj_monocle <- embedCells(my_phemdObj_lg, data_model='gaussianff', sigma=0.02, maxIter=2)
+my_phemdObj_monocle <- embedCells(my_phemdObj_lg, cell_model='monocle2', data_model='gaussianff', sigma=0.02, maxIter=2)
 my_phemdObj_monocle <- orderCellsMonocle(my_phemdObj_monocle)
 }

@@ -14,13 +14,14 @@
 #' @field monocle_obj Data object of type "CellDataSet" that is the core Monocle data structure
 #' @field data_cluster_weights Matrix representing cell subtype relative frequencies for each sample (num_samples x num_genes)
 #' @field emd_dist_mat Matrix representing pairwise distances between each pair of cell subtypes
-#' @field seurat_obj Object of type "Seurat" that is the core Seurat data structure
+#' @field seurat_obj Object of class "Seurat" that is the core Seurat data structure
+#' @field phate_obj Object of class "phate" that is the core PHATE data structure
 #' @field experiment_ids Vector of length num_samples representing the experiment (batch) in which the sample was profiled
 #' @name Phemd
 #' @rdname Phemd
 #' @aliases Phemd-class
 #' @exportClass Phemd
-#' @importClassesFrom Seurat Seurat
+#' @importClassesFrom Seurat Seurat seurat
 
 setClassUnion("CDSorNULL",members=c('CellDataSet', "NULL"))
 setClassUnion("SeuratorNULL",members=c('Seurat', "NULL"))
@@ -36,6 +37,8 @@ setClass("Phemd",
                  data_cluster_weights = "matrix",
                  emd_dist_mat = "matrix",
                  seurat_obj = "SeuratorNULL",
+                 phate_obj = "list",
+                 cellstate_assignments = "list",
                  experiment_ids = "character", 
                  version='package_version'))
 
@@ -108,6 +111,20 @@ monocleInfo <- function(obj) {
 seuratInfo <- function(obj) {
   stopifnot(is(obj,"Phemd"))
   obj@seurat_obj
+}
+
+#' Accessor function for stored phate object
+#' 
+#' @param obj A Phemd object.
+#' @return An object of class 'phate' (from phateR)
+#' @export
+#' @examples
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' phateobj <- phateInfo(phemdObj)
+#' 
+phateInfo <- function(obj) {
+    stopifnot(is(obj,"Phemd"))
+    obj@phate_obj
 }
 
 #' Accessor function for EMD ground distance matrix
@@ -375,6 +392,28 @@ setMethod("seuratInfo<-", "Phemd", function(obj, value) {
   obj@seurat_obj <- value
   validObject(obj)
   obj
+})
+
+
+#' Setter function for phate object for experiment
+#' 
+#' @rdname Phemd-methods
+#' @docType methods
+#' @return Updated Phemd object containing phate object
+#' @export
+#' @examples
+#' phemdObj <- createDataObj(all_expn_data, all_genes, as.character(snames_data))
+#' #my_phateObj <- phateR::phate(all_expn_data[[1]])
+#' phateInfo(phemdObj) <- list()
+#' 
+setGeneric("phateInfo<-", function(obj, value) standardGeneric("phateInfo<-"))
+
+#' @rdname Phemd-methods
+#' @aliases Phemd,ANY,ANY-method
+setMethod("phateInfo<-", "Phemd", function(obj, value) {
+    obj@phate_obj <- value
+    validObject(obj)
+    obj
 })
 
 #' Setter function for cell subtype frequencies of each single-cell sample

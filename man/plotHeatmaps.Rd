@@ -4,13 +4,13 @@
 \alias{plotHeatmaps}
 \title{Plot heatmap of cell subtypes}
 \usage{
-plotHeatmaps(obj, cell_model = c("monocle2", "seurat"),
+plotHeatmaps(obj, cell_model = c("monocle2", "seurat", "phate"),
   selected_genes = NULL, w = 8, h = 5, ...)
 }
 \arguments{
-\item{obj}{'Phemd' object containing Monocle 2 object}
+\item{obj}{'Phemd' object containing cell-state embedding object}
 
-\item{cell_model}{Method by which cell state was modeled (either "monocle2" or "seurat")}
+\item{cell_model}{Method by which cell state was modeled ("monocle2", "seurat", or "phate")}
 
 \item{selected_genes}{Vector containing gene names to include in heatmap (optional)}
 
@@ -24,10 +24,10 @@ plotHeatmaps(obj, cell_model = c("monocle2", "seurat"),
 Heatmap containing expression values for each cell subtype. If cell_model is 'seurat', then returns a list of heatmaps (1 for each batch) that may be subsequently plotted individually
 }
 \description{
-Takes as input a Phemd object containing either a Monocle2 or Seurat object (already embedded and ordered) and saves heatmap describing cell subtypes to specified folder
+Takes as input a Phemd object containing either a Monocle2, Seurat, or PHATE object (already embedded and clustered) and plots heatmap characterizing cell subtypes
 }
 \details{
-\code{embedCells} and \code{orderCellsMonocle} need to be called before calling this function. Required additional package: 'pheatmap'
+\code{embedCells} (and \code{orderCellsMonocle} if using Monocle2) need to be called before calling this function. Required additional package: 'pheatmap'
 }
 \examples{
 
