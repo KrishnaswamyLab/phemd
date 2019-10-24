@@ -32,18 +32,18 @@ map and partitioned to identify groups of similar samples.
 PhEMD requires R version >= 3.4.0 (recommended 3.5.0+), Bioconductor 
 version >= 3.5 (recommended 3.7+), and Monocle 2 version >= 2.4.0 
 (recommended 2.8.0)
- 
-###Install from Github
- 
-```{r echo=T, results = 'hide',message=F, warning=F, eval=F}
-library(devtools)
-install_github("wschen/phemd")
-```
 
 ###Install from Bioconductor
 
 ```{r echo=T, results = 'hide',message=F, warning=F, eval=F}
 BiocManager::install("phemd")
+```
+
+###Install from Github (though direct installation from Bioconductor is preferred)
+ 
+```{r echo=T, results = 'hide',message=F, warning=F, eval=F}
+library(devtools)
+install_github("wschen/phemd")
 ```
 
 ###Load library after installation
