@@ -15,4 +15,4 @@ R CMD INSTALL .
 ```
 
 ## Running PhEMD
-See the pdf file in the "vignettes" folder for a step-by-step tutorial on applying PhEMD to a multi-sample single-cell dataset.
+See https://bioconductor.org/packages/release/bioc/vignettes/phemd/inst/doc/phemd.html for a step-by-step tutorial on applying PhEMD to a multi-sample single-cell dataset.
