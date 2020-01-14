@@ -46,6 +46,7 @@ export("batchIDs<-")
 export("GDM<-")
 
 importFrom(pracma, squareform, isempty, strcat)
+import(reticulate)
 import(monocle)
 import(RColorBrewer)
 import(igraph)

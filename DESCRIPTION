@@ -36,7 +36,14 @@ Imports:
   BiocGenerics,
   SummarizedExperiment,
   Biobase,
-  phateR
+  phateR,
+  reticulate
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "phate")
+    )
+  )
 Suggests: knitr
 VignetteBuilder: knitr
 biocViews: 
