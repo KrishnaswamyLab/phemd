@@ -811,7 +811,7 @@ clusterIndividualSamples <- function(obj, verbose=FALSE, cell_model=c('monocle2'
             cur_hist <- rep(0, nclusters)
             state_labels <- as.numeric(as.character(Idents(seurat_obj)))
             names(state_labels) <- rownames(seurat_obj@meta.data)
-            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', 
+            ref_data <- t(as.matrix(GetAssayData(seurat_obj, assay='RNA', 
                                                  slot='counts')))
             cell_idx_curplt <- which(seurat_obj@meta.data$plt == cur_plt)
             if(length(cell_idx_curplt) == 0) {
