@@ -62,7 +62,7 @@ retrieveRefClusters <- function(obj, cell_model=c('monocle2','seurat', 'phate'),
         } else if(expn_type == 'pca') {
             mydata <- Embeddings(object = seurat_obj, reduction = 'pca')[,seq_len(ndim)]
         } else if(expn_type == 'raw') {
-            mydata <- t(as.matrix(GetAssayData(seurat_obj, assay.type='RNA', slot='counts')))
+            mydata <- t(as.matrix(GetAssayData(seurat_obj, assay='RNA', slot='counts')))
         } else {
             stop('Error: expn_type must be either "raw" or "reduced"')
         }
