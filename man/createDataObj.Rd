@@ -4,8 +4,7 @@
 \alias{createDataObj}
 \title{Create 'Phemd' object}
 \usage{
-createDataObj(data, markers, snames, datatype = "list",
-  valtype = "counts")
+createDataObj(data, markers, snames, datatype = "list", valtype = "counts")
 }
 \arguments{
 \item{data}{List of length \var{num_samples} containing expression data; each element is of size \var{num_cells} x \var{num_markers}. Alternately a SingleCellExperiment object.}

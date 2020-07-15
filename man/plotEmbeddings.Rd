@@ -4,8 +4,15 @@
 \alias{plotEmbeddings}
 \title{Plots Monocle2 cell embedding plots}
 \usage{
-plotEmbeddings(obj, cell_model = c("monocle2", "seurat", "phate"),
-  cmap = NULL, w = 4, h = 5, pt_sz = 1, ndims = NULL)
+plotEmbeddings(
+  obj,
+  cell_model = c("monocle2", "seurat", "phate"),
+  cmap = NULL,
+  w = 4,
+  h = 5,
+  pt_sz = 1,
+  ndims = NULL
+)
 }
 \arguments{
 \item{obj}{'Phemd' object containing Monocle 2 object}

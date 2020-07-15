@@ -4,8 +4,14 @@
 \alias{plotHeatmaps}
 \title{Plot heatmap of cell subtypes}
 \usage{
-plotHeatmaps(obj, cell_model = c("monocle2", "seurat", "phate"),
-  selected_genes = NULL, w = 8, h = 5, ...)
+plotHeatmaps(
+  obj,
+  cell_model = c("monocle2", "seurat", "phate"),
+  selected_genes = NULL,
+  w = 8,
+  h = 5,
+  ...
+)
 }
 \arguments{
 \item{obj}{'Phemd' object containing cell-state embedding object}

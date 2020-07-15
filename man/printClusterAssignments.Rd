@@ -4,8 +4,7 @@
 \alias{printClusterAssignments}
 \title{Writes samples to file based on community detection group assignments}
 \usage{
-printClusterAssignments(cluster_assignments, obj, dest,
-  overwrite = FALSE)
+printClusterAssignments(cluster_assignments, obj, dest, overwrite = FALSE)
 }
 \arguments{
 \item{cluster_assignments}{Vector containing group assignments for each sample}

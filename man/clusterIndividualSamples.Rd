@@ -4,8 +4,11 @@
 \alias{clusterIndividualSamples}
 \title{Computes cell subtype abundances for each sample}
 \usage{
-clusterIndividualSamples(obj, verbose = FALSE,
-  cell_model = c("monocle2", "seurat", "phate"))
+clusterIndividualSamples(
+  obj,
+  verbose = FALSE,
+  cell_model = c("monocle2", "seurat", "phate")
+)
 }
 \arguments{
 \item{obj}{'Phemd' object containing single-cell expression data of all samples in @data slot and cell-state embedding object generated and stored using the embedCells function.}

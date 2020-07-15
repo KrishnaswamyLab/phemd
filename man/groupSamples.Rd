@@ -4,8 +4,13 @@
 \alias{groupSamples}
 \title{Performs community detection on sample-sample distance matrix to identify groups of similar samples}
 \usage{
-groupSamples(distmat, distfun = "hclust", ncluster = NULL,
-  method = "complete", ...)
+groupSamples(
+  distmat,
+  distfun = "hclust",
+  ncluster = NULL,
+  method = "complete",
+  ...
+)
 }
 \arguments{
 \item{distmat}{A distance matrix of dimension num_samples x num_samples representing pairwise dissimilarity between samples}

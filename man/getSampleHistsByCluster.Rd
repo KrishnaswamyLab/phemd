@@ -4,8 +4,11 @@
 \alias{getSampleHistsByCluster}
 \title{Gets cell subtype frequency histograms for each sample by cluster ID}
 \usage{
-getSampleHistsByCluster(myobj, cluster_assignments,
-  cell_model = c("monocle2", "seurat"))
+getSampleHistsByCluster(
+  myobj,
+  cluster_assignments,
+  cell_model = c("monocle2", "seurat")
+)
 }
 \arguments{
 \item{myobj}{phemdObj object containing cell subtype relative frequency in @data_cluster_weights slot}
