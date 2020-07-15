@@ -4,9 +4,14 @@
 \alias{embedCells}
 \title{Generate cell-state embedding}
 \usage{
-embedCells(obj, cell_model = c("monocle2", "seurat", "phate"),
-  data_model = "negbinomial_sz", phate_ncluster = 8,
-  phate_cluster_seed = NULL, ...)
+embedCells(
+  obj,
+  cell_model = c("monocle2", "seurat", "phate"),
+  data_model = "negbinomial_sz",
+  phate_ncluster = 8,
+  phate_cluster_seed = NULL,
+  ...
+)
 }
 \arguments{
 \item{obj}{'Phemd' object containing aggregated data}

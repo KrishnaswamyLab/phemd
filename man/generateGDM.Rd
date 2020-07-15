@@ -4,8 +4,12 @@
 \alias{generateGDM}
 \title{Computes ground distance matrix based on cell embedding}
 \usage{
-generateGDM(obj, cell_model = c("monocle2", "seurat", "phate"),
-  expn_type = "reduced", ndim = 8)
+generateGDM(
+  obj,
+  cell_model = c("monocle2", "seurat", "phate"),
+  expn_type = "reduced",
+  ndim = 8
+)
 }
 \arguments{
 \item{obj}{'Phemd' object containing cell-state embedding object}

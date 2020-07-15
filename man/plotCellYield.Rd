@@ -4,8 +4,7 @@
 \alias{plotCellYield}
 \title{Plot cell yield of each sample as bar plot}
 \usage{
-plotCellYield(myobj, labels = NULL, cmap = NULL, font_sz = 0.6,
-  w = 8, h = 9.5)
+plotCellYield(myobj, labels = NULL, cmap = NULL, font_sz = 0.6, w = 8, h = 9.5)
 }
 \arguments{
 \item{myobj}{Phmed object containing expression data for each sample in 'data' slot}

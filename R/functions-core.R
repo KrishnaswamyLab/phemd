@@ -56,15 +56,19 @@ retrieveRefClusters <- function(obj, cell_model=c('monocle2','seurat', 'phate'),
         state_labels <- as.numeric(as.character(Idents(seurat_obj)))
         if(min(state_labels) == 0) state_labels <- state_labels + 1 #ensure cluster labels are 1 indexed instead of zero indexed
         names(state_labels) <- names(Idents(seurat_obj)) # label cluster assignments with cell name
-        if(expn_type == 'reduced') {
+        if(expn_type == 'cca.aligned') {
             # aligned CCA expression data (num_cells x num_markers)
             mydata <- Embeddings(object = seurat_obj, reduction = 'cca.aligned')[,seq_len(ndim)]
-        } else if(expn_type == 'pca') {
+        } else if(expn_type %in% c('pca', 'reduced')) {
             mydata <- Embeddings(object = seurat_obj, reduction = 'pca')[,seq_len(ndim)]
+        } else if(expn_type == 'tsne') {
+            mydata <- Embeddings(object = seurat_obj, reduction = 'tsne')[,seq_len(ndim)]
+        } else if(expn_type == 'umap') {
+            mydata <- Embeddings(object = seurat_obj, reduction = 'umap')[,seq_len(ndim)]
         } else if(expn_type == 'raw') {
             mydata <- t(as.matrix(GetAssayData(seurat_obj, assay='RNA', slot='counts')))
         } else {
-            stop('Error: expn_type must be either "raw" or "reduced"')
+            stop('Error: expn_type must be one of the following: "raw", "pca", "umap", "tsne", "cca.aligned", "reduced"')
         }
         
         # Split data frame based on cluster assignments
@@ -436,6 +440,10 @@ bindSeuratObj <- function(phemd_obj, seurat_obj, batch.colname='plt') {
     }
     if(batch.colname != 'plt') {
         seurat_obj@meta.data$plt <- seurat_obj@meta.data[[batch.colname]]
+    }
+    # assign batch ID of each cell as project ID defined upon Seurat obj initialization
+    if(!'plt' %in% colnames(seurat_obj@meta.data)) {
+        seurat_obj@meta.data$plt <- as.character(seurat_obj@meta.data$orig.ident)
     }
     seuratInfo(phemd_obj) <- seurat_obj
     

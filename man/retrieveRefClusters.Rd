@@ -4,8 +4,12 @@
 \alias{retrieveRefClusters}
 \title{Retrieve reference cell clusters}
 \usage{
-retrieveRefClusters(obj, cell_model = c("monocle2", "seurat", "phate"),
-  expn_type = "reduced", ndim = 10)
+retrieveRefClusters(
+  obj,
+  cell_model = c("monocle2", "seurat", "phate"),
+  expn_type = "reduced",
+  ndim = 10
+)
 }
 \arguments{
 \item{obj}{Phemd struct containing cell-state embedding object and underlying expression data}

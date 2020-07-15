@@ -4,8 +4,12 @@
 \alias{assignCellClusterNearestNode}
 \title{Assign cells to a reference cell subtype}
 \usage{
-assignCellClusterNearestNode(cur_cells, ref_cells, ref_cell_labels,
-  cell_model = c("monocle2", "seurat", "phate"))
+assignCellClusterNearestNode(
+  cur_cells,
+  ref_cells,
+  ref_cell_labels,
+  cell_model = c("monocle2", "seurat", "phate")
+)
 }
 \arguments{
 \item{cur_cells}{Matrix of cells to be assigned to clusters (Dim: \var{num_cells} x \var{num_markers})}
