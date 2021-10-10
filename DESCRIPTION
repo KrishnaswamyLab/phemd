@@ -9,7 +9,7 @@ Description: Package for comparing and generating a low-dimensional embedding
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5), monocle
+Depends: R (>= 3.5), monocle, Seurat (== 3.1-2)
 Imports: 
   SingleCellExperiment, 
   RColorBrewer, 
@@ -19,7 +19,6 @@ Imports:
   cluster, 
   Rtsne, 
   destiny, 
-  Seurat, 
   RANN, 
   ggplot2, 
   maptree, 
