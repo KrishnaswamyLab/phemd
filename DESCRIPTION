@@ -1,7 +1,7 @@
 Package: phemd
 Type: Package
 Title: Phenotypic EMD for comparison of single-cell samples
-Version: 1.15.0
+Version: 1.15.1
 Author: William S Chen
 Maintainer: William S Chen <wil.yum.chen@gmail.com>
 Description: Package for comparing and generating a low-dimensional embedding
@@ -57,3 +57,4 @@ biocViews:
   Visualization, 
   MultipleComparison
 RoxygenNote: 7.0.2
+PackageStatus: Deprecated
