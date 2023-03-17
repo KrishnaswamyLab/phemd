@@ -425,6 +425,45 @@ project2MSTUpdated <- function(cds, Projection_Method)
     cds
 }
 
+#' @title newCellDataSetUpdated (updated from monocle v2.24.1 package for R 4.0+ compatibliity)
+#' @description Creates new CDS
+#' @details Private method (not to be called by user directly). Adapted from monocle v2.24.1 (https://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf)
+#' @param cellData the CellDataSet upon which to perform this operation
+#' @param phenoData phenoData
+#' @param featureData featureData
+#' @param lowerDetectionLimit lowerDetectionLimit
+#' @param expressionFamily expressionFamily
+#' @return CellDataSet
+newCellDataSetUpdated <- function (cellData, phenoData = NULL, featureData = NULL, lowerDetectionLimit = 0.1, 
+             expressionFamily = VGAM::negbinomial.size()) 
+{
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    if (!inherits(cellData, "matrix") && any(isSparseMatrix(cellData) == 
+        FALSE)) {
+        stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
+    }
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    sizeFactors <- rep(NA_real_, ncol(cellData))
+    if (is.null(phenoData)) 
+        phenoData <- annotatedDataFrameFrom(cellData, byrow = FALSE)
+    if (is.null(featureData)) 
+        featureData <- annotatedDataFrameFrom(cellData, byrow = TRUE)
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    phenoData$Size_Factor <- sizeFactors
+    cds <- new("CellDataSet", assayData = assayDataNew("environment", 
+                                                       exprs = cellData), phenoData = phenoData, featureData = featureData, 
+               lowerDetectionLimit = lowerDetectionLimit, expressionFamily = expressionFamily, 
+               dispFitInfo = new.env(hash = TRUE))
+    validObject(cds)
+    cds
+}
+    
 #' @title orderCells (updated from monocle v2.24.1 package for R 4.0+ compatibliity)
 #' @description Orders cells according to pseudotime.
 #' @details Private method (not to be called by user directly). Adapted from monocle v2.24.1 (https://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf)
@@ -797,7 +836,7 @@ embedCells <- function(obj, cell_model=c('monocle2', 'seurat', 'phate'), data_mo
             extra_args['max_components'] <- 2 #set number of dimensionality-reduced components to 2
         }
         
-        monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData=fd,
+        monocle_obj <- newCellDataSetUpdated(mydata,phenoData=NULL,featureData=fd,
                                       expressionFamily=expression_fam_fn)
         varLabels(featureData(monocle_obj)) <- 'gene_short_name' #random formatting requirement for monocle
         
