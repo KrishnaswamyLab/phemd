@@ -364,6 +364,219 @@ gaussianffLocal <- function(dispersion = 0, parallel = FALSE, zero = NULL) {
     )
 }
 
+#' @title project2MST (updated from monocle v2.24.1 package for R 4.0+ compatibliity)
+#' @description project2MST
+#' @details Private method (not to be called by user directly). Adapted from monocle v2.24.1 (https://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf)
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param Projection_Method the projection method
+#' @return CellDataSet with updatedtrajectory inference
+project2MSTUpdated <- function(cds, Projection_Method) 
+{
+    dp_mst <- minSpanningTree(cds)
+    Z <- reducedDimS(cds)
+    Y <- reducedDimK(cds)
+    cds <- monocle:::findNearestPointOnMST(cds)
+    closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+    closest_vertex_names <- colnames(Y)[closest_vertex]
+    closest_vertex_df <- as.matrix(closest_vertex)
+    row.names(closest_vertex_df) <- row.names(closest_vertex)
+    tip_leaves <- names(which(degree(dp_mst) == 1))
+    if (!is.function(Projection_Method)) {
+        P <- Y[, closest_vertex]
+    }
+    else {
+        P <- matrix(rep(0, length(Z)), nrow = nrow(Z))
+        for (i in 1:length(closest_vertex)) {
+            neighbors <- names(V(dp_mst)[suppressWarnings(nei(closest_vertex_names[i], 
+                                                              mode = "all"))])
+            projection <- NULL
+            distance <- NULL
+            Z_i <- Z[, i]
+            for (neighbor in neighbors) {
+                if (closest_vertex_names[i] %in% tip_leaves) {
+                    tmp <- monocle:::projPointOnLine(Z_i, Y[, c(closest_vertex_names[i], 
+                                                      neighbor)])
+                }
+                else {
+                    tmp <- Projection_Method(Z_i, Y[, c(closest_vertex_names[i], 
+                                                        neighbor)])
+                }
+                projection <- rbind(projection, tmp)
+                distance <- c(distance, dist(rbind(Z_i, tmp)))
+            }
+            if (!inherits(projection, "matrix")) { #Updated from class(mydata) != "matrix"
+                projection <- as.matrix(projection)
+            }
+            P[, i] <- projection[which(distance == min(distance))[1], 
+            ]
+        }
+    }
+    colnames(P) <- colnames(Z)
+    dp <- as.matrix(dist(t(P)))
+    min_dist = min(dp[dp != 0])
+    dp <- dp + min_dist
+    diag(dp) <- 0
+    cellPairwiseDistances(cds) <- dp
+    gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+    dp_mst <- minimum.spanning.tree(gp)
+    cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_tree <- dp_mst
+    cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_dist <- P
+    cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex <- closest_vertex_df
+    cds
+}
+
+#' @title newCellDataSetUpdated (updated from monocle v2.24.1 package for R 4.0+ compatibliity)
+#' @description Creates new CDS
+#' @details Private method (not to be called by user directly). Adapted from monocle v2.24.1 (https://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf)
+#' @param cellData the CellDataSet upon which to perform this operation
+#' @param phenoData phenoData
+#' @param featureData featureData
+#' @param lowerDetectionLimit lowerDetectionLimit
+#' @param expressionFamily expressionFamily
+#' @return CellDataSet
+newCellDataSetUpdated <- function (cellData, phenoData = NULL, featureData = NULL, lowerDetectionLimit = 0.1, 
+             expressionFamily = VGAM::negbinomial.size()) 
+{
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    if (!inherits(cellData, "matrix") && any(isSparseMatrix(cellData) == 
+        FALSE) {
+        stop("Error: argument cellData must be a matrix (either sparse from the Matrix package or dense)")
+    }
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    sizeFactors <- rep(NA_real_, ncol(cellData))
+    if (is.null(phenoData)) 
+        phenoData <- annotatedDataFrameFrom(cellData, byrow = FALSE)
+    if (is.null(featureData)) 
+        featureData <- annotatedDataFrameFrom(cellData, byrow = TRUE)
+    if (!("gene_short_name" %in% colnames(featureData))) {
+        warning("Warning: featureData must contain a column verbatim named 'gene_short_name' for certain functions")
+    }
+    phenoData$Size_Factor <- sizeFactors
+    cds <- new("CellDataSet", assayData = assayDataNew("environment", 
+                                                       exprs = cellData), phenoData = phenoData, featureData = featureData, 
+               lowerDetectionLimit = lowerDetectionLimit, expressionFamily = expressionFamily, 
+               dispFitInfo = new.env(hash = TRUE))
+    validObject(cds)
+    cds
+}
+    
+#' @title orderCells (updated from monocle v2.24.1 package for R 4.0+ compatibliity)
+#' @description Orders cells according to pseudotime.
+#' @details Private method (not to be called by user directly). Adapted from monocle v2.24.1 (https://www.bioconductor.org/packages/release/bioc/manuals/monocle/man/monocle.pdf)
+#' @param cds the CellDataSet upon which to perform this operation
+#' @param root_state The state to use as the root of the trajectory.
+#' @param params num_paths the number of end-point cell states to allow in the biological process.
+#' @param reverse whether to reverse the beginning and end points of the learned biological process.
+#' @return CellDataSet with updatedtrajectory inference
+orderCellsUpdated <- function (cds, root_state = NULL, num_paths = NULL, reverse = NULL) 
+{
+    if (class(cds)[1] != "CellDataSet") {
+        stop("Error cds is not of type 'CellDataSet'")
+    }
+    if (is.null(cds@dim_reduce_type)) {
+        stop("Error: dimensionality not yet reduced. Please call reduceDimension() before calling this function.")
+    }
+    if (any(c(length(cds@reducedDimS) == 0, length(cds@reducedDimK) == 
+              0))) {
+        stop("Error: dimension reduction didn't prodvide correct results. Please check your reduceDimension() step and ensure correct dimension reduction are performed before calling this function.")
+    }
+    root_cell <- monocle:::select_root_cell(cds, root_state, reverse)
+    cds@auxOrderingData <- new.env(hash = TRUE)
+    if (cds@dim_reduce_type == "ICA") {
+        if (is.null(num_paths)) {
+            num_paths = 1
+        }
+        adjusted_S <- t(cds@reducedDimS)
+        dp <- as.matrix(dist(adjusted_S))
+        cellPairwiseDistances(cds) <- as.matrix(dist(adjusted_S))
+        gp <- graph.adjacency(dp, mode = "undirected", weighted = TRUE)
+        dp_mst <- minimum.spanning.tree(gp)
+        minSpanningTree(cds) <- dp_mst
+        next_node <<- 0
+        res <- pq_helper(dp_mst, use_weights = FALSE, root_node = root_cell)
+        cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+        order_list <- monocle:::extract_good_branched_ordering(res$subtree, 
+                                                     res$root, cellPairwiseDistances(cds), num_paths, 
+                                                     FALSE)
+        cc_ordering <- order_list$ordering_df
+        row.names(cc_ordering) <- cc_ordering$sample_name
+        minSpanningTree(cds) <- as.undirected(order_list$cell_ordering_tree)
+        pData(cds)$Pseudotime <- cc_ordering[row.names(pData(cds)), 
+        ]$pseudo_time
+        pData(cds)$State <- cc_ordering[row.names(pData(cds)), 
+        ]$cell_state
+        mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 
+                                                              2)]$name
+        minSpanningTree(cds) <- dp_mst
+        cds@auxOrderingData[[cds@dim_reduce_type]]$cell_ordering_tree <- as.undirected(order_list$cell_ordering_tree)
+    }
+    else if (cds@dim_reduce_type == "DDRTree") {
+        if (is.null(num_paths) == FALSE) {
+            message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
+        }
+        cc_ordering <- monocle:::extract_ddrtree_ordering(cds, root_cell)
+        pData(cds)$Pseudotime <- cc_ordering[row.names(pData(cds)), 
+        ]$pseudo_time
+        K_old <- reducedDimK(cds)
+        old_dp <- cellPairwiseDistances(cds)
+        old_mst <- minSpanningTree(cds)
+        old_A <- reducedDimA(cds)
+        old_W <- reducedDimW(cds)
+        cds <- project2MSTUpdated(cds, monocle:::project_point_to_line_segment) #Calling local updated version of this fx
+        minSpanningTree(cds) <- cds@auxOrderingData[[cds@dim_reduce_type]]$pr_graph_cell_proj_tree
+        root_cell_idx <- which(V(old_mst)$name == root_cell, 
+                               arr.ind = T)
+        cells_mapped_to_graph_root <- which(cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex == 
+                                                root_cell_idx)
+        if (length(cells_mapped_to_graph_root) == 0) {
+            cells_mapped_to_graph_root <- root_cell_idx
+        }
+        cells_mapped_to_graph_root <- V(minSpanningTree(cds))[cells_mapped_to_graph_root]$name
+        tip_leaves <- names(which(degree(minSpanningTree(cds)) == 
+                                      1))
+        root_cell <- cells_mapped_to_graph_root[cells_mapped_to_graph_root %in% 
+                                                    tip_leaves][1]
+        if (is.na(root_cell)) {
+            root_cell <- select_root_cell(cds, root_state, reverse)
+        }
+        cds@auxOrderingData[[cds@dim_reduce_type]]$root_cell <- root_cell
+        cc_ordering_new_pseudotime <- monocle:::extract_ddrtree_ordering(cds, 
+                                                               root_cell)
+        pData(cds)$Pseudotime <- cc_ordering_new_pseudotime[row.names(pData(cds)), 
+        ]$pseudo_time
+        if (is.null(root_state) == TRUE) {
+            closest_vertex <- cds@auxOrderingData[["DDRTree"]]$pr_graph_cell_proj_closest_vertex
+            pData(cds)$State <- cc_ordering[closest_vertex[, 
+                                                           1], ]$cell_state
+        }
+        monocle:::reducedDimK(cds) <- K_old
+        cellPairwiseDistances(cds) <- old_dp
+        minSpanningTree(cds) <- old_mst
+        monocle:::reducedDimA(cds) <- old_A
+        monocle:::reducedDimW(cds) <- old_W
+        mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 
+                                                              2)]$name
+    }
+    else if (cds@dim_reduce_type == "SimplePPT") {
+        if (is.null(num_paths) == FALSE) {
+            message("Warning: num_paths only valid for method 'ICA' in reduceDimension()")
+        }
+        cc_ordering <- monocle:::extract_ddrtree_ordering(cds, root_cell)
+        pData(cds)$Pseudotime <- cc_ordering[row.names(pData(cds)), 
+        ]$pseudo_time
+        pData(cds)$State <- cc_ordering[row.names(pData(cds)), 
+        ]$cell_state
+        mst_branch_nodes <- V(minSpanningTree(cds))[which(degree(minSpanningTree(cds)) > 
+                                                              2)]$name
+    }
+    cds@auxOrderingData[[cds@dim_reduce_type]]$branch_points <- mst_branch_nodes
+    cds
+}
+
 ############################
 ### Public methods below ###
 ############################
@@ -623,12 +836,12 @@ embedCells <- function(obj, cell_model=c('monocle2', 'seurat', 'phate'), data_mo
             extra_args['max_components'] <- 2 #set number of dimensionality-reduced components to 2
         }
         
-        monocle_obj <- newCellDataSet(mydata,phenoData=NULL,featureData=fd,
+        monocle_obj <- newCellDataSetUpdated(mydata,phenoData=NULL,featureData=fd,
                                       expressionFamily=expression_fam_fn)
         varLabels(featureData(monocle_obj)) <- 'gene_short_name' #random formatting requirement for monocle
         
-        monocle_obj <- estimateSizeFactors(monocle_obj)
         if(data_model == 'negbinomial_sz') {
+            monocle_obj <- estimateSizeFactors(monocle_obj) #Only needed for negbinomial data; also note that with R 4.0 class(mymatrix) returns ["matrix", "array"] so isSparseMatrix doesn't return scalar and hence is broken
             monocle_obj <- estimateDispersions(monocle_obj)
         }
         if(data_model == 'gaussianff') {
@@ -679,7 +892,7 @@ orderCellsMonocle <- function(obj, ...) {
     oc_args <- c(list(cds=monocle_obj),
     extra_args[names(extra_args) %in% c("root_state", "reverse")])
     
-    monocle_obj_ordered <- do.call(orderCells, oc_args)
+    monocle_obj_ordered <- do.call(orderCellsUpdated, oc_args) #updated from Monocle2 to be compatible with R4.2
     monocleInfo(obj) <- monocle_obj_ordered
     return(obj)
 }
